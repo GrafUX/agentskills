@@ -11,3 +11,8 @@
 **Vulnerability:** Path leakage via `OSError` messages and `skill_dir` representations exposing internal server structure in error output.
 **Learning:** Exception handling for missing or unreadable files can unintentionally leak full system paths if the raw exception or absolute path is formatted into user-facing output.
 **Prevention:** Sanitize error messages by relying solely on the final path component (`skill_dir.name`) and restricting error string representation to safe subsets like `e.strerror`.
+
+## 2025-06-10 - [CLI Path and Stack Trace Exposure]
+**Vulnerability:** The CLI commands leaked stack traces when unexpected exceptions occurred, and `validate_cmd` printed the raw, potentially absolute file path of the skill being validated.
+**Learning:** Raw paths can expose internal directory structures of the system running the validation. Uncaught exceptions can expose the underlying library's call stack to the end user.
+**Prevention:** Wrap CLI command logic in broad `Exception` try/catch blocks with sanitized error messages. When outputting user paths, use `path.name` or `path.resolve().name` to print only the final component.

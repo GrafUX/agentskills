@@ -36,18 +36,24 @@ def validate_cmd(skill_path: Path):
         0: Valid skill
         1: Validation errors found
     """
-    if _is_skill_md_file(skill_path):
-        skill_path = skill_path.parent
+    try:
+        if _is_skill_md_file(skill_path):
+            skill_path = skill_path.parent
 
-    errors = validate(skill_path)
+        errors = validate(skill_path)
 
-    if errors:
-        click.echo(f"Validation failed for {skill_path}:", err=True)
-        for error in errors:
-            click.echo(f"  - {error}", err=True)
+        name_to_print = skill_path.name if skill_path.name else skill_path.resolve().name
+
+        if errors:
+            click.echo(f"Validation failed for {name_to_print}:", err=True)
+            for error in errors:
+                click.echo(f"  - {error}", err=True)
+            sys.exit(1)
+        else:
+            click.echo(f"Valid skill: {name_to_print}")
+    except Exception:
+        click.echo("An unexpected error occurred during validation.", err=True)
         sys.exit(1)
-    else:
-        click.echo(f"Valid skill: {skill_path}")
 
 
 @main.command("read-properties")
@@ -70,6 +76,9 @@ def read_properties_cmd(skill_path: Path):
         click.echo(json.dumps(props.to_dict(), indent=2))
     except SkillError as e:
         click.echo(f"Error: {e}", err=True)
+        sys.exit(1)
+    except Exception:
+        click.echo("An unexpected error occurred while reading properties.", err=True)
         sys.exit(1)
 
 
@@ -98,6 +107,9 @@ def to_prompt_cmd(skill_paths: tuple[Path, ...]):
         click.echo(output)
     except SkillError as e:
         click.echo(f"Error: {e}", err=True)
+        sys.exit(1)
+    except Exception:
+        click.echo("An unexpected error occurred while generating prompt.", err=True)
         sys.exit(1)
 
 

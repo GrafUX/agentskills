@@ -15,3 +15,7 @@
 **Vulnerability:** Unhandled `OSError` (such as `PermissionError`) during initial filesystem checks (`exists()`, `is_dir()`) and `RuntimeError` from symlink loops inside `resolve()` could crash the CLI, leaking the internal Python stack trace and exact absolute server paths to the user.
 **Learning:** Even simple operations like `Path.exists()` can raise exceptions like `PermissionError` on restricted parent directories, and `Path.resolve()` can hit a `RuntimeError` from a symlink loop. If these aren't caught and sanitized at the application boundaries, internal context is leaked.
 **Prevention:** Wrap all path I/O operations (including exists/is_dir) and resolution in `try...except (OSError, RuntimeError)` blocks. Fail gracefully at CLI entry points by catching generic `Exception` to prevent any stray tracebacks, and use `.name` for safe error reflections.
+## 2025-06-12 - [Symlink Path Leakage]
+**Vulnerability:** Path leakage via RuntimeError when handling symlink loops.
+**Learning:** Exception handling for missing or unreadable files can unintentionally leak full system paths if the raw exception or absolute path is formatted into user-facing output.
+**Prevention:** Sanitize error messages by relying solely on the final path component (`skill_dir.name`) and generic error messages.

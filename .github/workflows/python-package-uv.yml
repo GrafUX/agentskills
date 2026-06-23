@@ -15,6 +15,7 @@ jobs:
       with:
         version: "latest"
         enable-cache: true
+        cache-dependency-glob: "skills-ref/uv.lock"
     - name: Set up Python
       uses: actions/setup-python@v5
       with:

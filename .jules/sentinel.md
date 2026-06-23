@@ -27,3 +27,13 @@
 **Vulnerability:** The application used `path.exists()` in `parser.py` before attempting to open `SKILL.md`. An attacker could provide a named pipe (FIFO) or special device file, causing the `open()` call to block indefinitely, leading to a Denial of Service.
 **Learning:** `path.exists()` does not guarantee a path is a regular file. Opening special files can result in hangs or unexpected behavior.
 **Prevention:** Always use `path.is_file()` when looking up files to ensure the target is a regular file before attempting to read its contents.
+
+## 2026-06-23 - [Missing Input Length Limits (DoS)]
+**Vulnerability:** Input length limits were missing for the `license` and `allowed-tools` fields during SKILL.md metadata validation. An attacker could provide a malicious repository with extremely large strings for these fields, potentially causing memory exhaustion or Denial of Service in client applications parsing this metadata.
+**Learning:** Even fields not critical to application logic can be vectors for resource exhaustion attacks if their length is unbounded.
+**Prevention:** Always implement explicit maximum string length validation for all external metadata fields parsed from YAML or text documents.
+
+## 2026-06-23 - [CI Dependency Resolution Failure]
+**Vulnerability:** CI pipeline was failing due to missing `environment.yml` because the project uses `uv` internally, but CI assumed `conda`.
+**Learning:** CI must accurately reflect the dependency management tool used locally. Using mismatched tooling leads to build failures.
+**Prevention:** Replace legacy CI actions with `astral-sh/setup-uv` and configure it to run directly within the appropriate directory (`skills-ref`).

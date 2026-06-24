@@ -264,6 +264,38 @@ Body
     assert any("exceeds" in e and "500" in e for e in errors)
 
 
+def test_license_too_long(tmp_path):
+    """License exceeding 256 chars should fail."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    long_license = "x" * 300
+    (skill_dir / "SKILL.md").write_text(f"""---
+name: my-skill
+description: A test skill
+license: {long_license}
+---
+Body
+""")
+    errors = validate(skill_dir)
+    assert any("exceeds" in e and "256" in e for e in errors)
+
+
+def test_allowed_tools_too_long(tmp_path):
+    """Allowed tools exceeding 1024 chars should fail."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    long_tools = "x" * 1100
+    (skill_dir / "SKILL.md").write_text(f"""---
+name: my-skill
+description: A test skill
+allowed-tools: {long_tools}
+---
+Body
+""")
+    errors = validate(skill_dir)
+    assert any("exceeds" in e and "1024" in e for e in errors)
+
+
 def test_nfkc_normalization(tmp_path):
     """Skill names are NFKC normalized before validation.
 

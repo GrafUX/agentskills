@@ -1,0 +1,37 @@
+name: Python Package using uv
+
+on: [push]
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 5
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        enable-cache: true
+        cache-dependency-glob: "skills-ref/uv.lock"
+
+    - name: Set up Python
+      run: uv python install 3.12
+
+    - name: Install dependencies
+      working-directory: ./skills-ref
+      run: uv sync
+
+    - name: Lint with ruff
+      working-directory: ./skills-ref
+      run: uv run ruff check
+
+    - name: Format check with ruff
+      working-directory: ./skills-ref
+      run: uv run ruff format --check
+
+    - name: Test with pytest
+      working-directory: ./skills-ref
+      run: uv run pytest

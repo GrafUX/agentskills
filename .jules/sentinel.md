@@ -27,3 +27,7 @@
 **Vulnerability:** The application used `path.exists()` in `parser.py` before attempting to open `SKILL.md`. An attacker could provide a named pipe (FIFO) or special device file, causing the `open()` call to block indefinitely, leading to a Denial of Service.
 **Learning:** `path.exists()` does not guarantee a path is a regular file. Opening special files can result in hangs or unexpected behavior.
 **Prevention:** Always use `path.is_file()` when looking up files to ensure the target is a regular file before attempting to read its contents.
+## 2024-05-18 - Missing Length Bounds on Parsed Metadata
+**Vulnerability:** Unbounded string length for experimental metadata fields (like `allowed-tools` and `license`) when validating SKILL.md files.
+**Learning:** While core fields had limits, optional fields did not have max lengths, potentially leading to resource exhaustion (DoS) during downstream processing of massive strings.
+**Prevention:** Always define and enforce `MAX_*_LENGTH` constants for all externally provided fields during input validation, even optional or experimental ones.

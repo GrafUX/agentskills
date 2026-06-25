@@ -27,3 +27,7 @@
 **Vulnerability:** The application used `path.exists()` in `parser.py` before attempting to open `SKILL.md`. An attacker could provide a named pipe (FIFO) or special device file, causing the `open()` call to block indefinitely, leading to a Denial of Service.
 **Learning:** `path.exists()` does not guarantee a path is a regular file. Opening special files can result in hangs or unexpected behavior.
 **Prevention:** Always use `path.is_file()` when looking up files to ensure the target is a regular file before attempting to read its contents.
+## 2026-06-25 - Prevent DoS via Metadata Exhaustion
+**Vulnerability:** Metadata fields parsed from SKILL.md (like `license` and `allowed-tools`) lacked strict maximum string length limits.
+**Learning:** Even when fields are logically optional or loosely defined strings, allowing unbounded lengths risks resource exhaustion and DoS attacks when the frontmatter is processed.
+**Prevention:** Always enforce maximum string length constraints (e.g., `MAX_LICENSE_LENGTH = 256`, `MAX_ALLOWED_TOOLS_LENGTH = 1024`) during validation for any field parsed from external user input, even if it's considered trusted or standard metadata.

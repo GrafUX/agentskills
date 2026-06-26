@@ -312,3 +312,35 @@ def test_validate_unicode_error(tmp_path):
     errors = validate(skill_dir)
     assert len(errors) == 1
     assert "is not valid UTF-8" in errors[0]
+
+
+def test_license_too_long(tmp_path):
+    """License exceeding limit should fail."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    long_license = "x" * 200
+    (skill_dir / "SKILL.md").write_text(f"""---
+name: my-skill
+description: A test skill
+license: {long_license}
+---
+Body
+""")
+    errors = validate(skill_dir)
+    assert any("exceeds" in e and "100" in e for e in errors)
+
+
+def test_allowed_tools_too_long(tmp_path):
+    """Allowed-tools exceeding limit should fail."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    long_tools = "x" * 1500
+    (skill_dir / "SKILL.md").write_text(f"""---
+name: my-skill
+description: A test skill
+allowed-tools: {long_tools}
+---
+Body
+""")
+    errors = validate(skill_dir)
+    assert any("exceeds" in e and "1000" in e for e in errors)

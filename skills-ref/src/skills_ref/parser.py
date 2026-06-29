@@ -121,11 +121,27 @@ def read_properties(skill_dir: Path) -> SkillProperties:
     if not isinstance(description, str) or not description.strip():
         raise ValidationError("Field 'description' must be a non-empty string")
 
+    license_val = metadata.get("license")
+    if license_val is not None and not isinstance(license_val, str):
+        raise ValidationError("Field 'license' must be a string")
+
+    comp_val = metadata.get("compatibility")
+    if comp_val is not None and not isinstance(comp_val, str):
+        raise ValidationError("Field 'compatibility' must be a string")
+
+    tools_val = metadata.get("allowed-tools")
+    if tools_val is not None and not isinstance(tools_val, str):
+        raise ValidationError("Field 'allowed-tools' must be a string")
+
+    custom_metadata = metadata.get("metadata")
+    if custom_metadata is not None and not isinstance(custom_metadata, dict):
+        raise ValidationError("Field 'metadata' must be a dictionary")
+
     return SkillProperties(
         name=name.strip(),
         description=description.strip(),
-        license=metadata.get("license"),
-        compatibility=metadata.get("compatibility"),
-        allowed_tools=metadata.get("allowed-tools"),
-        metadata=metadata.get("metadata"),
+        license=license_val,
+        compatibility=comp_val,
+        allowed_tools=tools_val,
+        metadata=custom_metadata,
     )

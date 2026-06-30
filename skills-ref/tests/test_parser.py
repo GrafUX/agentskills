@@ -208,3 +208,48 @@ def test_read_properties_unicode_error(tmp_path):
 
     with pytest.raises(ParseError, match="is not valid UTF-8"):
         read_properties(skill_dir)
+
+
+def test_read_properties_type_confusion_license(tmp_path):
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+license:
+  - MIT
+---
+Body
+""")
+    with pytest.raises(ValidationError, match="Field 'license' must be a string"):
+        read_properties(skill_dir)
+
+
+def test_read_properties_type_confusion_compatibility(tmp_path):
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+compatibility:
+  - windows
+---
+Body
+""")
+    with pytest.raises(ValidationError, match="Field 'compatibility' must be a string"):
+        read_properties(skill_dir)
+
+
+def test_read_properties_type_confusion_allowed_tools(tmp_path):
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+allowed-tools:
+  - Bash(jq:*)
+---
+Body
+""")
+    with pytest.raises(ValidationError, match="Field 'allowed-tools' must be a string"):
+        read_properties(skill_dir)

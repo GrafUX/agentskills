@@ -121,6 +121,13 @@ def read_properties(skill_dir: Path) -> SkillProperties:
     if not isinstance(description, str) or not description.strip():
         raise ValidationError("Field 'description' must be a non-empty string")
 
+    if "license" in metadata and not isinstance(metadata["license"], str):
+        raise ValidationError("Field 'license' must be a string")
+    if "compatibility" in metadata and not isinstance(metadata["compatibility"], str):
+        raise ValidationError("Field 'compatibility' must be a string")
+    if "allowed-tools" in metadata and not isinstance(metadata["allowed-tools"], str):
+        raise ValidationError("Field 'allowed-tools' must be a string")
+
     return SkillProperties(
         name=name.strip(),
         description=description.strip(),

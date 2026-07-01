@@ -14,7 +14,10 @@ from .validator import validate
 
 def _is_skill_md_file(path: Path) -> bool:
     """Check if path points directly to a SKILL.md or skill.md file."""
-    return path.is_file() and path.name.lower() == "skill.md"
+    try:
+        return path.is_file() and path.name.lower() == "skill.md"
+    except (OSError, RuntimeError):
+        return False
 
 
 @click.group()

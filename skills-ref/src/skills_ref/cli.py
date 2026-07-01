@@ -39,23 +39,23 @@ def validate_cmd(skill_path: Path):
         0: Valid skill
         1: Validation errors found
     """
-    if _is_skill_md_file(skill_path):
-        skill_path = skill_path.parent
-
     try:
+        if _is_skill_md_file(skill_path):
+            skill_path = skill_path.parent
+
         errors = validate(skill_path)
 
+        name_to_print = skill_path.name if skill_path.name else skill_path.resolve().name
+
         if errors:
-            click.echo(f"Validation failed for {skill_path.name}:", err=True)
+            click.echo(f"Validation failed for {name_to_print}:", err=True)
             for error in errors:
                 click.echo(f"  - {error}", err=True)
             sys.exit(1)
         else:
-            click.echo(f"Valid skill: {skill_path.name}")
+            click.echo(f"Valid skill: {name_to_print}")
     except Exception:
-        click.echo(
-            f"An unexpected error occurred validating {skill_path.name}", err=True
-        )
+        click.echo("An unexpected error occurred during validation.", err=True)
         sys.exit(1)
 
 
@@ -81,10 +81,7 @@ def read_properties_cmd(skill_path: Path):
         click.echo(f"Error: {e}", err=True)
         sys.exit(1)
     except Exception:
-        click.echo(
-            f"An unexpected error occurred reading properties for {skill_path.name}",
-            err=True,
-        )
+        click.echo("An unexpected error occurred while reading properties.", err=True)
         sys.exit(1)
 
 
@@ -115,7 +112,7 @@ def to_prompt_cmd(skill_paths: tuple[Path, ...]):
         click.echo(f"Error: {e}", err=True)
         sys.exit(1)
     except Exception:
-        click.echo("An unexpected error occurred generating prompts", err=True)
+        click.echo("An unexpected error occurred while generating prompt.", err=True)
         sys.exit(1)
 
 

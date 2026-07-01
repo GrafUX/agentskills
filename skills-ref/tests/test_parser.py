@@ -253,3 +253,21 @@ Body
 """)
     with pytest.raises(ValidationError, match="Field 'allowed-tools' must be a string"):
         read_properties(skill_dir)
+
+
+def test_read_properties_type_confusion_metadata(tmp_path):
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+metadata:
+  - this
+  - is
+  - a
+  - list
+---
+Body
+""")
+    with pytest.raises(ValidationError, match="Field 'metadata' must be a dictionary"):
+        read_properties(skill_dir)

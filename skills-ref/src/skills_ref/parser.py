@@ -127,6 +127,8 @@ def read_properties(skill_dir: Path) -> SkillProperties:
         raise ValidationError("Field 'compatibility' must be a string")
     if "allowed-tools" in metadata and not isinstance(metadata["allowed-tools"], str):
         raise ValidationError("Field 'allowed-tools' must be a string")
+    if "metadata" in metadata and not isinstance(metadata["metadata"], dict):
+        raise ValidationError("Field 'metadata' must be a dictionary")
 
     return SkillProperties(
         name=name.strip(),

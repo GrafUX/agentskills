@@ -57,7 +57,9 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
     try:
         parsed = strictyaml.load(frontmatter_str)
         metadata = parsed.data
-    except strictyaml.YAMLError as e:
+    except Exception as e:
+        # Catch all exceptions because strictyaml can raise non-YAMLError exceptions
+        # on certain invalid inputs (e.g. AttributeError on unprintable characters)
         raise ParseError(f"Invalid YAML in frontmatter: {e}")
 
     if not isinstance(metadata, dict):

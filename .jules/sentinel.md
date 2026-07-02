@@ -37,11 +37,3 @@
 **Vulnerability:** In `parser.py`, optional metadata fields like `license`, `compatibility`, `allowed-tools`, and `metadata` were parsed directly from YAML into `SkillProperties` without type validation. If an attacker provided a list or dictionary instead of a string for these fields, downstream applications iterating over or expecting string methods (e.g., `.startswith()`) would crash, leading to a Denial of Service (DoS) via Type Confusion.
 **Learning:** Even though `strictyaml` enforces basic YAML safety, without an explicit schema, it infers types based on YAML syntax (e.g., lists and dicts). Data models (like dataclasses) do not enforce types at runtime, allowing invalid types to silently bypass instantiation checks.
 **Prevention:** Always enforce explicit runtime type validation for all parsed fields (e.g., `isinstance(val, str)`) before injecting them into data models to ensure downstream type safety.
-## 2024-06-28 - [Type Confusion via YAML Parsing]
-**Vulnerability:** The SKILL.md parser did not validate the type of `license`, `compatibility`, and `allowed-tools` when constructing the `SkillProperties` object. If an attacker provided a YAML list or map instead of a string, `strictyaml` would parse it as a sequence/mapping, leading to downstream application crashes (Denial of Service) when code expected a string but received a different type. Note that `allowed-tools` is defined as a space-separated string in the spec, not a list.
-**Learning:** Metadata fields parsed from external YAML files must be strictly type-validated, not just length-validated, before passing them into strongly-typed object constructors.
-**Prevention:** Always check `isinstance(field, expected_type)` for every field parsed from untrusted sources before using them or passing them into dataclasses.
-## 2025-06-29 - [Type Confusion via YAML Metadata Parsing]
-**Vulnerability:** The SKILL.md parser did not validate the type of the `metadata` field. If an attacker provided a YAML list or string instead of a map, it could lead to downstream application crashes (Denial of Service) due to type confusion.
-**Learning:** Metadata fields parsed from external YAML files must be strictly type-validated before being processed.
-**Prevention:** Always check `isinstance(field, dict)` for the metadata field parsed from untrusted sources to ensure it's a valid mapping.

@@ -208,3 +208,10 @@ def test_read_properties_unicode_error(tmp_path):
 
     with pytest.raises(ParseError, match="is not valid UTF-8"):
         read_properties(skill_dir)
+
+
+def test_invalid_yaml_characters():
+    """YAML with unprintable/invalid characters (like ANSI escapes) should not crash."""
+    content = "---\nname: 'test\033[31mred\033[0m'\ndescription: desc\n---\nbody"
+    with pytest.raises(ParseError, match="Invalid YAML"):
+        parse_frontmatter(content)

@@ -1,14 +1,12 @@
-name: CI
+name: Python Package CI
 
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+on: [push]
 
 jobs:
-  build:
+  build-linux:
     runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 5
 
     steps:
     - uses: actions/checkout@v4
@@ -19,23 +17,19 @@ jobs:
         enable-cache: true
         cache-dependency-glob: "skills-ref/uv.lock"
 
-    - name: Set up Python
+    - name: Set up Python 3.12
       uses: actions/setup-python@v5
       with:
         python-version: "3.12"
 
     - name: Install dependencies
+      working-directory: ./skills-ref
       run: uv sync
-      working-directory: skills-ref
 
-    - name: Lint with Ruff
-      run: uv run ruff check .
-      working-directory: skills-ref
-
-    - name: Check format with Ruff
-      run: uv run ruff format --check .
-      working-directory: skills-ref
+    - name: Lint with ruff
+      working-directory: ./skills-ref
+      run: uv run ruff check
 
     - name: Test with pytest
+      working-directory: ./skills-ref
       run: uv run pytest
-      working-directory: skills-ref

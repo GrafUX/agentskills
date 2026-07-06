@@ -4,16 +4,17 @@ import unicodedata
 from pathlib import Path
 from typing import Optional
 
+from .constants import (
+    MAX_ALLOWED_TOOLS_LENGTH,
+    MAX_COMPATIBILITY_LENGTH,
+    MAX_DESCRIPTION_LENGTH,
+    MAX_LICENSE_LENGTH,
+    MAX_METADATA_KEY_LENGTH,
+    MAX_METADATA_VALUE_LENGTH,
+    MAX_SKILL_NAME_LENGTH,
+)
 from .errors import ParseError
 from .parser import find_skill_md, parse_frontmatter
-
-MAX_SKILL_NAME_LENGTH = 64
-MAX_DESCRIPTION_LENGTH = 1024
-MAX_COMPATIBILITY_LENGTH = 500
-MAX_LICENSE_LENGTH = 100
-MAX_ALLOWED_TOOLS_LENGTH = 1024
-MAX_METADATA_KEY_LENGTH = 64
-MAX_METADATA_VALUE_LENGTH = 1024
 
 # Allowed frontmatter fields per Agent Skills Spec
 ALLOWED_FIELDS = {

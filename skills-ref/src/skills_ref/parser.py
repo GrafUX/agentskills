@@ -130,7 +130,9 @@ def read_properties(skill_dir: Path) -> SkillProperties:
     if not isinstance(name, str) or not name.strip():
         raise ValidationError("Field 'name' must be a non-empty string")
     if len(name) > MAX_SKILL_NAME_LENGTH:
-        raise ValidationError(f"Field 'name' exceeds {MAX_SKILL_NAME_LENGTH} character limit")
+        raise ValidationError(
+            f"Field 'name' exceeds {MAX_SKILL_NAME_LENGTH} character limit"
+        )
 
     if not isinstance(description, str) or not description.strip():
         raise ValidationError("Field 'description' must be a non-empty string")
@@ -144,7 +146,9 @@ def read_properties(skill_dir: Path) -> SkillProperties:
         if not isinstance(license_val, str):
             raise ValidationError("Field 'license' must be a string")
         if len(license_val) > MAX_LICENSE_LENGTH:
-            raise ValidationError(f"Field 'license' exceeds {MAX_LICENSE_LENGTH} character limit")
+            raise ValidationError(
+                f"Field 'license' exceeds {MAX_LICENSE_LENGTH} character limit"
+            )
 
     comp_val = metadata.get("compatibility")
     if comp_val is not None:

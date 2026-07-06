@@ -1,7 +1,7 @@
 # Milomaps Hosting and Build Diagnosis
 
 ## 1. Login Page Issue
-The URL https://milomaps.com redirects to https://milomaps.cloudflareaccess.com. This indicates that the landing page is currently protected by **Cloudflare Access (Zero Trust)** and potentially **Vercel Deployment Protection**.
+The URL https://milomaps.com redirects to https://milomaps.cloudflareaccess.com. This indicates that the landing page is currently protected by **Cloudflare Access (Zero Trust)** (Vercel Deployment Protection would be configured separately in the Vercel project settings).
 
 ### Steps to Resolve:
 1. **Cloudflare:** Disable or adjust the Access Policy for milomaps.com in the Cloudflare Zero Trust Dashboard.

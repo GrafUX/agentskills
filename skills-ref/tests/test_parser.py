@@ -238,13 +238,18 @@ Body
 
 def test_name_length_limit(tmp_path):
     """Name exceeding length limit should raise ValidationError."""
+    from skills_ref.constants import MAX_SKILL_NAME_LENGTH
+
     skill_dir = tmp_path / "my-skill"
     skill_dir.mkdir()
+    over = "a" * (MAX_SKILL_NAME_LENGTH + 1)
     (skill_dir / "SKILL.md").write_text(f"""---
-name: {"a" * 65}
+name: {over}
 description: desc
 ---
 Body
 """)
-    with pytest.raises(ValidationError, match="exceeds 64 character limit"):
+    with pytest.raises(
+        ValidationError, match=fr"exceeds {MAX_SKILL_NAME_LENGTH} character limit"
+    ):
         read_properties(skill_dir)

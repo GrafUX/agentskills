@@ -219,15 +219,20 @@ def test_invalid_yaml_characters():
 
 def test_description_length_limit(tmp_path):
     """Description exceeding length limit should raise ValidationError."""
+    from skills_ref.constants import MAX_DESCRIPTION_LENGTH
+
     skill_dir = tmp_path / "my-skill"
     skill_dir.mkdir()
+    over = "a" * (MAX_DESCRIPTION_LENGTH + 1)
     (skill_dir / "SKILL.md").write_text(f"""---
 name: my-skill
-description: {"a" * 1025}
+description: {over}
 ---
 Body
 """)
-    with pytest.raises(ValidationError, match="exceeds 1024 character limit"):
+    with pytest.raises(
+        ValidationError, match=fr"exceeds {MAX_DESCRIPTION_LENGTH} character limit"
+    ):
         read_properties(skill_dir)
 
 

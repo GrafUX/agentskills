@@ -215,3 +215,41 @@ def test_invalid_yaml_characters():
     content = "---\nname: 'test\033[31mred\033[0m'\ndescription: desc\n---\nbody"
     with pytest.raises(ParseError, match="Invalid YAML"):
         parse_frontmatter(content)
+
+
+def test_description_length_limit(tmp_path):
+    """Description exceeding length limit should raise ValidationError."""
+    from skills_ref.constants import MAX_DESCRIPTION_LENGTH
+
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    over = "a" * (MAX_DESCRIPTION_LENGTH + 1)
+    (skill_dir / "SKILL.md").write_text(f"""---
+name: my-skill
+description: {over}
+---
+Body
+""")
+    with pytest.raises(
+        ValidationError, match=fr"exceeds {MAX_DESCRIPTION_LENGTH} character limit"
+    ):
+        read_properties(skill_dir)
+
+
+def test_name_length_limit(tmp_path):
+    """Name exceeding length limit should raise ValidationError."""
+    from skills_ref.constants import MAX_SKILL_NAME_LENGTH
+
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    over = "a" * (MAX_SKILL_NAME_LENGTH + 1)
+    (skill_dir / "SKILL.md").write_text(f"""---
+name: {over}
+description: desc
+---
+Body
+""")
+    with pytest.raises(
+        ValidationError, match=fr"exceeds {MAX_SKILL_NAME_LENGTH} character limit"
+    ):
+        read_properties(skill_dir)

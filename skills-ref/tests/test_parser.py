@@ -231,7 +231,7 @@ description: {over}
 Body
 """)
     with pytest.raises(
-        ValidationError, match=fr"exceeds {MAX_DESCRIPTION_LENGTH} character limit"
+        ValidationError, match=rf"exceeds {MAX_DESCRIPTION_LENGTH} character limit"
     ):
         read_properties(skill_dir)
 
@@ -250,6 +250,52 @@ description: desc
 Body
 """)
     with pytest.raises(
-        ValidationError, match=fr"exceeds {MAX_SKILL_NAME_LENGTH} character limit"
+        ValidationError, match=rf"exceeds {MAX_SKILL_NAME_LENGTH} character limit"
     ):
         read_properties(skill_dir)
+
+
+def test_metadata_keys_limit(tmp_path):
+    """Metadata with too many keys should raise ValidationError/ParseError."""
+    from skills_ref.constants import MAX_METADATA_KEYS_COUNT
+
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+
+    metadata_block = "\n".join(
+        [f"  key{i}: value{i}" for i in range(MAX_METADATA_KEYS_COUNT + 1)]
+    )
+
+    (skill_dir / "SKILL.md").write_text(f"""---
+name: my-skill
+description: desc
+metadata:
+{metadata_block}
+---
+Body
+""")
+    with pytest.raises(
+        ParseError, match=rf"exceeds {MAX_METADATA_KEYS_COUNT} keys limit"
+    ):
+        read_properties(skill_dir)
+
+
+def test_parse_frontmatter_metadata_limit():
+    """parse_frontmatter should enforce metadata keys limit."""
+    from skills_ref.constants import MAX_METADATA_KEYS_COUNT
+
+    metadata_block = "\n".join(
+        [f"  key{i}: value{i}" for i in range(MAX_METADATA_KEYS_COUNT + 1)]
+    )
+    content = f"""---
+name: my-skill
+description: desc
+metadata:
+{metadata_block}
+---
+Body
+"""
+    with pytest.raises(
+        ParseError, match=rf"exceeds {MAX_METADATA_KEYS_COUNT} keys limit"
+    ):
+        parse_frontmatter(content)

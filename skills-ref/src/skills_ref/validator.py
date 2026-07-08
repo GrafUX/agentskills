@@ -10,6 +10,7 @@ from .constants import (
     MAX_DESCRIPTION_LENGTH,
     MAX_LICENSE_LENGTH,
     MAX_METADATA_KEY_LENGTH,
+    MAX_METADATA_KEYS_COUNT,
     MAX_METADATA_VALUE_LENGTH,
     MAX_SKILL_NAME_LENGTH,
 )
@@ -147,6 +148,9 @@ def _validate_metadata_dict(custom_metadata: dict) -> list[str]:
     if not isinstance(custom_metadata, dict):
         errors.append("Field 'metadata' must be a dictionary")
         return errors
+
+    if len(custom_metadata) > MAX_METADATA_KEYS_COUNT:
+        errors.append(f"Field 'metadata' exceeds {MAX_METADATA_KEYS_COUNT} keys limit")
 
     for k, v in custom_metadata.items():
         if not isinstance(k, str):

@@ -11,6 +11,7 @@ from .constants import (
     MAX_DESCRIPTION_LENGTH,
     MAX_LICENSE_LENGTH,
     MAX_METADATA_KEY_LENGTH,
+    MAX_METADATA_KEYS_COUNT,
     MAX_METADATA_VALUE_LENGTH,
     MAX_SKILL_NAME_LENGTH,
 )
@@ -75,6 +76,10 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
         raise ParseError("SKILL.md frontmatter must be a YAML mapping")
 
     if "metadata" in metadata and isinstance(metadata["metadata"], dict):
+        if len(metadata["metadata"]) > MAX_METADATA_KEYS_COUNT:
+            raise ParseError(
+                f"Field 'metadata' exceeds {MAX_METADATA_KEYS_COUNT} keys limit"
+            )
         metadata["metadata"] = {str(k): str(v) for k, v in metadata["metadata"].items()}
 
     return metadata, body
@@ -172,6 +177,10 @@ def read_properties(skill_dir: Path) -> SkillProperties:
     if custom_metadata is not None:
         if not isinstance(custom_metadata, dict):
             raise ValidationError("Field 'metadata' must be a dictionary")
+        if len(custom_metadata) > MAX_METADATA_KEYS_COUNT:
+            raise ValidationError(
+                f"Field 'metadata' exceeds {MAX_METADATA_KEYS_COUNT} keys limit"
+            )
         for k, v in custom_metadata.items():
             if not isinstance(k, str) or len(k) > MAX_METADATA_KEY_LENGTH:
                 raise ValidationError(

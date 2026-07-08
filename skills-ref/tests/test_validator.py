@@ -393,3 +393,26 @@ Body
 """)
     errors = validate(skill_dir)
     assert any("must be a dictionary" in e for e in errors)
+
+
+def test_metadata_keys_limit(tmp_path):
+    """Metadata with too many keys should return a validation error."""
+    from skills_ref.constants import MAX_METADATA_KEYS_COUNT
+
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+
+    metadata_block = "\n".join(
+        [f"  key{i}: value{i}" for i in range(MAX_METADATA_KEYS_COUNT + 1)]
+    )
+
+    (skill_dir / "SKILL.md").write_text(f"""---
+name: my-skill
+description: A test skill
+metadata:
+{metadata_block}
+---
+Body
+""")
+    errors = validate(skill_dir)
+    assert any(f"exceeds {MAX_METADATA_KEYS_COUNT} keys limit" in e for e in errors)

@@ -231,7 +231,7 @@ description: {over}
 Body
 """)
     with pytest.raises(
-        ValidationError, match=fr"exceeds {MAX_DESCRIPTION_LENGTH} character limit"
+        ValidationError, match=rf"exceeds {MAX_DESCRIPTION_LENGTH} character limit"
     ):
         read_properties(skill_dir)
 
@@ -250,6 +250,6 @@ description: desc
 Body
 """)
     with pytest.raises(
-        ValidationError, match=fr"exceeds {MAX_SKILL_NAME_LENGTH} character limit"
+        ValidationError, match=rf"exceeds {MAX_SKILL_NAME_LENGTH} character limit"
     ):
         read_properties(skill_dir)

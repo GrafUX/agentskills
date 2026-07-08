@@ -69,7 +69,10 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
     except Exception as e:
         # Catch all exceptions because strictyaml can raise non-YAMLError exceptions
         # on certain invalid inputs (e.g. AttributeError on unprintable characters)
-        raise ParseError(f"Invalid YAML in frontmatter: {e}")
+        if isinstance(e, strictyaml.YAMLError):
+            raise ParseError(f"Invalid YAML in frontmatter: {e}")
+        else:
+            raise ParseError("Invalid YAML in frontmatter: Unexpected parsing error")
 
     if not isinstance(metadata, dict):
         raise ParseError("SKILL.md frontmatter must be a YAML mapping")

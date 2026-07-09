@@ -9,6 +9,8 @@ from .constants import (
     MAX_ALLOWED_TOOLS_LENGTH,
     MAX_COMPATIBILITY_LENGTH,
     MAX_DESCRIPTION_LENGTH,
+    MAX_FRONTMATTER_FIELDS_COUNT,
+    MAX_FRONTMATTER_VALUE_LENGTH,
     MAX_LICENSE_LENGTH,
     MAX_METADATA_KEY_LENGTH,
     MAX_METADATA_KEYS_COUNT,
@@ -77,6 +79,23 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
 
     if not isinstance(metadata, dict):
         raise ParseError("SKILL.md frontmatter must be a YAML mapping")
+
+    if len(metadata) > MAX_FRONTMATTER_FIELDS_COUNT:
+        raise ParseError(
+            f"Frontmatter exceeds {MAX_FRONTMATTER_FIELDS_COUNT} fields limit"
+        )
+
+    for key, value in metadata.items():
+        if not isinstance(key, str):
+            raise ParseError("Frontmatter keys must be strings")
+        if len(key) > MAX_METADATA_KEY_LENGTH:
+            raise ParseError(
+                f"Frontmatter key exceeds {MAX_METADATA_KEY_LENGTH} character limit"
+            )
+        if isinstance(value, str) and len(value) > MAX_FRONTMATTER_VALUE_LENGTH:
+            raise ParseError(
+                f"Frontmatter value for '{key}' exceeds {MAX_FRONTMATTER_VALUE_LENGTH} character limit"
+            )
 
     if "metadata" in metadata and isinstance(metadata["metadata"], dict):
         if len(metadata["metadata"]) > MAX_METADATA_KEYS_COUNT:

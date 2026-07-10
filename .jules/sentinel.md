@@ -47,7 +47,7 @@
 **Learning:** Broad exception handling is sometimes necessary when calling third-party parsing libraries that might crash on unexpected input. However, the raw exception message of a broad exception must never be exposed to the user as it acts as an information leak.
 **Prevention:** When catching broad generic exceptions for untrusted input parsing, specifically check if the exception is an instance of an expected error class (e.g., `isinstance(e, strictyaml.YAMLError)`). Expose the message only if it's the expected type; otherwise, return a safe, generic fallback message (e.g., "Unexpected parsing error") to mask internal implementation details.
 
-## 2026-07-09 - [Resource Exhaustion via Unbounded Frontmatter]
+## 2025-07-09 - [Resource Exhaustion via Unbounded Frontmatter]
 **Vulnerability:** The SKILL.md parser did not limit the number of top-level fields or the length of keys and values in the YAML frontmatter. An attacker could provide a file with thousands of fields or megabytes of text in a single field, leading to excessive memory consumption or CPU usage during parsing and subsequent processing.
 **Learning:** Even if the total file size is limited (e.g., 1MB), the internal structure of parsed data (like YAML mappings) can still cause issues if not explicitly constrained.
 **Prevention:** Implement strict counts and character length limits for all parsed fields at the earliest possible stage, immediately after the raw data is loaded into a structured format.

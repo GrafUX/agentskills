@@ -9,8 +9,11 @@ from .constants import (
     MAX_ALLOWED_TOOLS_LENGTH,
     MAX_COMPATIBILITY_LENGTH,
     MAX_DESCRIPTION_LENGTH,
+    MAX_FRONTMATTER_FIELDS_COUNT,
+    MAX_FRONTMATTER_VALUE_LENGTH,
     MAX_LICENSE_LENGTH,
     MAX_METADATA_KEY_LENGTH,
+    MAX_METADATA_KEYS_COUNT,
     MAX_METADATA_VALUE_LENGTH,
     MAX_SKILL_NAME_LENGTH,
 )
@@ -69,12 +72,36 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
     except Exception as e:
         # Catch all exceptions because strictyaml can raise non-YAMLError exceptions
         # on certain invalid inputs (e.g. AttributeError on unprintable characters)
-        raise ParseError(f"Invalid YAML in frontmatter: {e}")
+        if isinstance(e, strictyaml.YAMLError):
+            raise ParseError(f"Invalid YAML in frontmatter: {e}")
+        else:
+            raise ParseError("Invalid YAML in frontmatter: Unexpected parsing error")
 
     if not isinstance(metadata, dict):
         raise ParseError("SKILL.md frontmatter must be a YAML mapping")
 
+    if len(metadata) > MAX_FRONTMATTER_FIELDS_COUNT:
+        raise ParseError(
+            f"Frontmatter exceeds {MAX_FRONTMATTER_FIELDS_COUNT} fields limit"
+        )
+
+    for key, value in metadata.items():
+        if not isinstance(key, str):
+            raise ParseError("Frontmatter keys must be strings")
+        if len(key) > MAX_METADATA_KEY_LENGTH:
+            raise ParseError(
+                f"Frontmatter key exceeds {MAX_METADATA_KEY_LENGTH} character limit"
+            )
+        if isinstance(value, str) and len(value) > MAX_FRONTMATTER_VALUE_LENGTH:
+            raise ParseError(
+                f"Frontmatter value for '{key}' exceeds {MAX_FRONTMATTER_VALUE_LENGTH} character limit"
+            )
+
     if "metadata" in metadata and isinstance(metadata["metadata"], dict):
+        if len(metadata["metadata"]) > MAX_METADATA_KEYS_COUNT:
+            raise ParseError(
+                f"Field 'metadata' exceeds {MAX_METADATA_KEYS_COUNT} keys limit"
+            )
         metadata["metadata"] = {str(k): str(v) for k, v in metadata["metadata"].items()}
 
     return metadata, body
@@ -94,7 +121,7 @@ def read_properties(skill_dir: Path) -> SkillProperties:
 
     Raises:
         ParseError: If SKILL.md is missing or has invalid YAML
-        ValidationError: If required fields (name, description) are missing
+        ValidationError: If required fields (name, description) are missing or exceed length limits
     """
     skill_dir = Path(skill_dir)
 
@@ -172,19 +199,18 @@ def read_properties(skill_dir: Path) -> SkillProperties:
     if custom_metadata is not None:
         if not isinstance(custom_metadata, dict):
             raise ValidationError("Field 'metadata' must be a dictionary")
-
+        if len(custom_metadata) > MAX_METADATA_KEYS_COUNT:
+            raise ValidationError(
+                f"Field 'metadata' exceeds {MAX_METADATA_KEYS_COUNT} keys limit"
+            )
         for k, v in custom_metadata.items():
-            if not isinstance(k, str):
-                raise ValidationError("Metadata keys must be strings")
-            if len(k) > MAX_METADATA_KEY_LENGTH:
+            if not isinstance(k, str) or len(k) > MAX_METADATA_KEY_LENGTH:
                 raise ValidationError(
-                    f"Metadata key '{k}' exceeds {MAX_METADATA_KEY_LENGTH} character limit"
+                    f"Metadata key exceeds {MAX_METADATA_KEY_LENGTH} character limit"
                 )
-            if not isinstance(v, str):
-                raise ValidationError(f"Metadata value for '{k}' must be a string")
-            if len(v) > MAX_METADATA_VALUE_LENGTH:
+            if not isinstance(v, str) or len(v) > MAX_METADATA_VALUE_LENGTH:
                 raise ValidationError(
-                    f"Metadata value for '{k}' exceeds {MAX_METADATA_VALUE_LENGTH} character limit"
+                    f"Metadata value exceeds {MAX_METADATA_VALUE_LENGTH} character limit"
                 )
 
     return SkillProperties(

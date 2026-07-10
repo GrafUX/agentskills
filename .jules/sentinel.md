@@ -56,3 +56,8 @@
 **Vulnerability:** In `parser.py`, `read_properties` parsed skill metadata without enforcing length limits. While the `validator.py` utility checked these limits, the code path used for generating LLM prompts (via `read_properties`) did not. An attacker could provide a skill with metadata fields (like `description`) approaching the 1MB file limit, leading to "Prompt Inflation" and exhausting the LLM context window.
 **Learning:** Security bounds must be enforced at the data ingestion point (`read_properties`) to protect all downstream consumers, including those that might skip the full validation utility.
 **Prevention:** Enforce string length limits for all metadata fields early in the parsing logic and share these constants between the parser and validator to ensure consistent security policy.
+
+## 2025-07-21 - [DoS via Large Error Messages]
+**Vulnerability:** Untrusted inputs (like skill names or invalid YAML) were echoed directly into error messages without length limits. An attacker could provide a 4096-character name or massive invalid YAML to generate extremely large error strings, potentially causing DoS in logging systems or downstream UI consumers.
+**Learning:** Reflecting untrusted input in error messages is a common source of both information leakage and resource exhaustion. Even if the input itself is limited (e.g., to 4096 chars), concatenating multiple such inputs or including large library-generated error excerpts can create unexpectedly large payloads.
+**Prevention:** Always truncate untrusted data and external library error messages when including them in application-level exceptions or user-facing output.

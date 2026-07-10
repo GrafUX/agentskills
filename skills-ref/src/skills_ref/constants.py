@@ -1,4 +1,4 @@
-"""Constants for Agent Skills."""
+"""Security-related constants for Agent Skills."""
 
 MAX_SKILL_NAME_LENGTH = 64
 MAX_DESCRIPTION_LENGTH = 1024

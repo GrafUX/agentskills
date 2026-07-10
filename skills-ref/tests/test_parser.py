@@ -299,3 +299,17 @@ Body
         ParseError, match=rf"exceeds {MAX_METADATA_KEYS_COUNT} keys limit"
     ):
         parse_frontmatter(content)
+
+
+def test_internal_parsing_error_is_sanitized(monkeypatch):
+    """Non-YAMLError from strictyaml.load must produce a sanitized message."""
+    import skills_ref.parser as parser_module
+
+    monkeypatch.setattr(parser_module.strictyaml, "load", lambda *a, **kw: (_ for _ in ()).throw(AttributeError("secret internal detail")))
+
+    content = "---\nname: my-skill\n---\nbody"
+    with pytest.raises(ParseError) as exc_info:
+        parse_frontmatter(content)
+
+    assert "Internal parsing error" in str(exc_info.value)
+    assert "secret internal detail" not in str(exc_info.value)

@@ -78,7 +78,7 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
                 err_msg = err_msg[:1000] + "..."
             raise ParseError(f"Invalid YAML in frontmatter: {err_msg}")
         else:
-            raise ParseError("Invalid YAML in frontmatter: Unexpected parsing error")
+            raise ParseError("Invalid YAML in frontmatter: Internal parsing error")
 
     if not isinstance(metadata, dict):
         raise ParseError("SKILL.md frontmatter must be a YAML mapping")

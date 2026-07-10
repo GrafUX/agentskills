@@ -92,7 +92,7 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
             raise ParseError(
                 f"Frontmatter key exceeds {MAX_METADATA_KEY_LENGTH} character limit"
             )
-        if isinstance(value, str) and len(value) > MAX_FRONTMATTER_VALUE_LENGTH:
+        if len(str(value)) > MAX_FRONTMATTER_VALUE_LENGTH:
             raise ParseError(
                 f"Frontmatter value for '{key}' exceeds {MAX_FRONTMATTER_VALUE_LENGTH} character limit"
             )

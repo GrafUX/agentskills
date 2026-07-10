@@ -41,14 +41,15 @@ def _validate_name(name: str, skill_dir: Path) -> list[str]:
 
     name = unicodedata.normalize("NFKC", name.strip())
 
+    display_name = name if len(name) <= 100 else name[:100] + "..."
     if len(name) > MAX_SKILL_NAME_LENGTH:
         errors.append(
-            f"Skill name '{name}' exceeds {MAX_SKILL_NAME_LENGTH} character limit "
+            f"Skill name '{display_name}' exceeds {MAX_SKILL_NAME_LENGTH} character limit "
             f"({len(name)} chars)"
         )
 
     if name != name.lower():
-        errors.append(f"Skill name '{name}' must be lowercase")
+        errors.append(f"Skill name '{display_name}' must be lowercase")
 
     if name.startswith("-") or name.endswith("-"):
         errors.append("Skill name cannot start or end with a hyphen")
@@ -58,7 +59,7 @@ def _validate_name(name: str, skill_dir: Path) -> list[str]:
 
     if not all(c.isalnum() or c == "-" for c in name):
         errors.append(
-            f"Skill name '{name}' contains invalid characters. "
+            f"Skill name '{display_name}' contains invalid characters. "
             "Only letters, digits, and hyphens are allowed."
         )
 
@@ -66,7 +67,7 @@ def _validate_name(name: str, skill_dir: Path) -> list[str]:
         dir_name = unicodedata.normalize("NFKC", skill_dir.name)
         if dir_name != name:
             errors.append(
-                f"Directory name '{skill_dir.name}' must match skill name '{name}'"
+                f"Directory name '{skill_dir.name}' must match skill name '{display_name}'"
             )
 
     return errors
@@ -152,17 +153,19 @@ def _validate_metadata_dict(custom_metadata: dict) -> list[str]:
         if not isinstance(k, str):
             errors.append("Metadata keys must be strings")
             continue
+
+        display_k = k if len(k) <= 100 else k[:100] + "..."
         if len(k) > MAX_METADATA_KEY_LENGTH:
             errors.append(
-                f"Metadata key '{k}' exceeds {MAX_METADATA_KEY_LENGTH} character limit"
+                f"Metadata key '{display_k}' exceeds {MAX_METADATA_KEY_LENGTH} character limit"
             )
 
         if not isinstance(v, str):
-            errors.append(f"Metadata value for '{k}' must be a string")
+            errors.append(f"Metadata value for '{display_k}' must be a string")
             continue
         if len(v) > MAX_METADATA_VALUE_LENGTH:
             errors.append(
-                f"Metadata value for '{k}' exceeds {MAX_METADATA_VALUE_LENGTH} character limit"
+                f"Metadata value for '{display_k}' exceeds {MAX_METADATA_VALUE_LENGTH} character limit"
             )
 
     return errors
@@ -172,10 +175,13 @@ def _validate_metadata_fields(metadata: dict) -> list[str]:
     """Validate that only allowed fields are present."""
     errors = []
 
-    extra_fields = set(metadata.keys()) - ALLOWED_FIELDS
+    extra_fields = sorted(set(metadata.keys()) - ALLOWED_FIELDS)
     if extra_fields:
+        display_extra = ", ".join(extra_fields)
+        if len(display_extra) > 500:
+            display_extra = display_extra[:500] + "..."
         errors.append(
-            f"Unexpected fields in frontmatter: {', '.join(sorted(extra_fields))}. "
+            f"Unexpected fields in frontmatter: {display_extra}. "
             f"Only {sorted(ALLOWED_FIELDS)} are allowed."
         )
 

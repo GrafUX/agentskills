@@ -5,6 +5,18 @@ from typing import Optional
 
 import strictyaml
 
+from .constants import (
+    MAX_ALLOWED_TOOLS_LENGTH,
+    MAX_COMPATIBILITY_LENGTH,
+    MAX_DESCRIPTION_LENGTH,
+    MAX_FRONTMATTER_FIELDS_COUNT,
+    MAX_FRONTMATTER_VALUE_LENGTH,
+    MAX_LICENSE_LENGTH,
+    MAX_METADATA_KEY_LENGTH,
+    MAX_METADATA_KEYS_COUNT,
+    MAX_METADATA_VALUE_LENGTH,
+    MAX_SKILL_NAME_LENGTH,
+)
 from .errors import ParseError, ValidationError
 from .models import SkillProperties
 
@@ -68,7 +80,28 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
     if not isinstance(metadata, dict):
         raise ParseError("SKILL.md frontmatter must be a YAML mapping")
 
+    if len(metadata) > MAX_FRONTMATTER_FIELDS_COUNT:
+        raise ParseError(
+            f"Frontmatter exceeds {MAX_FRONTMATTER_FIELDS_COUNT} fields limit"
+        )
+
+    for key, value in metadata.items():
+        if not isinstance(key, str):
+            raise ParseError("Frontmatter keys must be strings")
+        if len(key) > MAX_METADATA_KEY_LENGTH:
+            raise ParseError(
+                f"Frontmatter key exceeds {MAX_METADATA_KEY_LENGTH} character limit"
+            )
+        if isinstance(value, str) and len(value) > MAX_FRONTMATTER_VALUE_LENGTH:
+            raise ParseError(
+                f"Frontmatter value for '{key}' exceeds {MAX_FRONTMATTER_VALUE_LENGTH} character limit"
+            )
+
     if "metadata" in metadata and isinstance(metadata["metadata"], dict):
+        if len(metadata["metadata"]) > MAX_METADATA_KEYS_COUNT:
+            raise ParseError(
+                f"Field 'metadata' exceeds {MAX_METADATA_KEYS_COUNT} keys limit"
+            )
         metadata["metadata"] = {str(k): str(v) for k, v in metadata["metadata"].items()}
 
     return metadata, body
@@ -88,7 +121,7 @@ def read_properties(skill_dir: Path) -> SkillProperties:
 
     Raises:
         ParseError: If SKILL.md is missing or has invalid YAML
-        ValidationError: If required fields (name, description) are missing
+        ValidationError: If required fields (name, description) are missing or exceed length limits
     """
     skill_dir = Path(skill_dir)
 
@@ -123,24 +156,62 @@ def read_properties(skill_dir: Path) -> SkillProperties:
 
     if not isinstance(name, str) or not name.strip():
         raise ValidationError("Field 'name' must be a non-empty string")
+    if len(name) > MAX_SKILL_NAME_LENGTH:
+        raise ValidationError(
+            f"Field 'name' exceeds {MAX_SKILL_NAME_LENGTH} character limit"
+        )
+
     if not isinstance(description, str) or not description.strip():
         raise ValidationError("Field 'description' must be a non-empty string")
+    if len(description) > MAX_DESCRIPTION_LENGTH:
+        raise ValidationError(
+            f"Field 'description' exceeds {MAX_DESCRIPTION_LENGTH} character limit"
+        )
 
     license_val = metadata.get("license")
-    if license_val is not None and not isinstance(license_val, str):
-        raise ValidationError("Field 'license' must be a string")
+    if license_val is not None:
+        if not isinstance(license_val, str):
+            raise ValidationError("Field 'license' must be a string")
+        if len(license_val) > MAX_LICENSE_LENGTH:
+            raise ValidationError(
+                f"Field 'license' exceeds {MAX_LICENSE_LENGTH} character limit"
+            )
 
     comp_val = metadata.get("compatibility")
-    if comp_val is not None and not isinstance(comp_val, str):
-        raise ValidationError("Field 'compatibility' must be a string")
+    if comp_val is not None:
+        if not isinstance(comp_val, str):
+            raise ValidationError("Field 'compatibility' must be a string")
+        if len(comp_val) > MAX_COMPATIBILITY_LENGTH:
+            raise ValidationError(
+                f"Field 'compatibility' exceeds {MAX_COMPATIBILITY_LENGTH} character limit"
+            )
 
     tools_val = metadata.get("allowed-tools")
-    if tools_val is not None and not isinstance(tools_val, str):
-        raise ValidationError("Field 'allowed-tools' must be a string")
+    if tools_val is not None:
+        if not isinstance(tools_val, str):
+            raise ValidationError("Field 'allowed-tools' must be a string")
+        if len(tools_val) > MAX_ALLOWED_TOOLS_LENGTH:
+            raise ValidationError(
+                f"Field 'allowed-tools' exceeds {MAX_ALLOWED_TOOLS_LENGTH} character limit"
+            )
 
     custom_metadata = metadata.get("metadata")
-    if custom_metadata is not None and not isinstance(custom_metadata, dict):
-        raise ValidationError("Field 'metadata' must be a dictionary")
+    if custom_metadata is not None:
+        if not isinstance(custom_metadata, dict):
+            raise ValidationError("Field 'metadata' must be a dictionary")
+        if len(custom_metadata) > MAX_METADATA_KEYS_COUNT:
+            raise ValidationError(
+                f"Field 'metadata' exceeds {MAX_METADATA_KEYS_COUNT} keys limit"
+            )
+        for k, v in custom_metadata.items():
+            if not isinstance(k, str) or len(k) > MAX_METADATA_KEY_LENGTH:
+                raise ValidationError(
+                    f"Metadata key exceeds {MAX_METADATA_KEY_LENGTH} character limit"
+                )
+            if not isinstance(v, str) or len(v) > MAX_METADATA_VALUE_LENGTH:
+                raise ValidationError(
+                    f"Metadata value exceeds {MAX_METADATA_VALUE_LENGTH} character limit"
+                )
 
     return SkillProperties(
         name=name.strip(),

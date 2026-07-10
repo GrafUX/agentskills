@@ -215,3 +215,101 @@ def test_invalid_yaml_characters():
     content = "---\nname: 'test\033[31mred\033[0m'\ndescription: desc\n---\nbody"
     with pytest.raises(ParseError, match="Invalid YAML"):
         parse_frontmatter(content)
+
+
+def test_description_length_limit(tmp_path):
+    """Description exceeding length limit should raise ValidationError."""
+    from skills_ref.constants import MAX_DESCRIPTION_LENGTH
+
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    over = "a" * (MAX_DESCRIPTION_LENGTH + 1)
+    (skill_dir / "SKILL.md").write_text(f"""---
+name: my-skill
+description: {over}
+---
+Body
+""")
+    with pytest.raises(
+        ValidationError, match=rf"exceeds {MAX_DESCRIPTION_LENGTH} character limit"
+    ):
+        read_properties(skill_dir)
+
+
+def test_name_length_limit(tmp_path):
+    """Name exceeding length limit should raise ValidationError."""
+    from skills_ref.constants import MAX_SKILL_NAME_LENGTH
+
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    over = "a" * (MAX_SKILL_NAME_LENGTH + 1)
+    (skill_dir / "SKILL.md").write_text(f"""---
+name: {over}
+description: desc
+---
+Body
+""")
+    with pytest.raises(
+        ValidationError, match=rf"exceeds {MAX_SKILL_NAME_LENGTH} character limit"
+    ):
+        read_properties(skill_dir)
+
+
+def test_metadata_keys_limit(tmp_path):
+    """Metadata with too many keys should raise ValidationError/ParseError."""
+    from skills_ref.constants import MAX_METADATA_KEYS_COUNT
+
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+
+    metadata_block = "\n".join(
+        [f"  key{i}: value{i}" for i in range(MAX_METADATA_KEYS_COUNT + 1)]
+    )
+
+    (skill_dir / "SKILL.md").write_text(f"""---
+name: my-skill
+description: desc
+metadata:
+{metadata_block}
+---
+Body
+""")
+    with pytest.raises(
+        ParseError, match=rf"exceeds {MAX_METADATA_KEYS_COUNT} keys limit"
+    ):
+        read_properties(skill_dir)
+
+
+def test_parse_frontmatter_metadata_limit():
+    """parse_frontmatter should enforce metadata keys limit."""
+    from skills_ref.constants import MAX_METADATA_KEYS_COUNT
+
+    metadata_block = "\n".join(
+        [f"  key{i}: value{i}" for i in range(MAX_METADATA_KEYS_COUNT + 1)]
+    )
+    content = f"""---
+name: my-skill
+description: desc
+metadata:
+{metadata_block}
+---
+Body
+"""
+    with pytest.raises(
+        ParseError, match=rf"exceeds {MAX_METADATA_KEYS_COUNT} keys limit"
+    ):
+        parse_frontmatter(content)
+
+
+def test_internal_parsing_error_is_sanitized(monkeypatch):
+    """Non-YAMLError from strictyaml.load must produce a sanitized message."""
+    import skills_ref.parser as parser_module
+
+    monkeypatch.setattr(parser_module.strictyaml, "load", lambda *a, **kw: (_ for _ in ()).throw(AttributeError("secret internal detail")))
+
+    content = "---\nname: my-skill\n---\nbody"
+    with pytest.raises(ParseError) as exc_info:
+        parse_frontmatter(content)
+
+    assert "Internal parsing error" in str(exc_info.value)
+    assert "secret internal detail" not in str(exc_info.value)

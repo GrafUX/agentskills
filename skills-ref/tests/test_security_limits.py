@@ -32,8 +32,8 @@ def test_parse_frontmatter_key_too_long():
 
     with pytest.raises(ParseError) as excinfo:
         parse_frontmatter(content)
-    assert f"character limit" in str(excinfo.value)
-    assert f"Frontmatter key" in str(excinfo.value)
+    assert "character limit" in str(excinfo.value)
+    assert "Frontmatter key" in str(excinfo.value)
 
 
 def test_parse_frontmatter_value_too_long():

@@ -1,13 +1,10 @@
 import pytest
-from pathlib import Path
 from skills_ref.parser import read_properties
 from skills_ref.errors import ValidationError, ParseError
 from skills_ref.constants import (
     MAX_SKILL_NAME_LENGTH,
     MAX_DESCRIPTION_LENGTH,
     MAX_LICENSE_LENGTH,
-    MAX_COMPATIBILITY_LENGTH,
-    MAX_ALLOWED_TOOLS_LENGTH,
     MAX_METADATA_KEY_LENGTH,
     MAX_METADATA_VALUE_LENGTH,
     MAX_METADATA_KEYS_COUNT,

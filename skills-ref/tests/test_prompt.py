@@ -2,6 +2,8 @@
 
 import sys
 import pytest
+from skills_ref.constants import MAX_SKILLS_PER_PROMPT
+from skills_ref.errors import SkillError
 from skills_ref.prompt import to_prompt
 
 
@@ -90,3 +92,38 @@ Body
     assert "&lt;" in result
     assert "&gt;" in result
     assert "special-location-&-<>" not in result
+
+
+def test_deduplicate_skills(tmp_path):
+    """Duplicate skill directories are only included once."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+---
+Body
+""")
+    # Pass the same directory multiple times
+    result = to_prompt([skill_dir, skill_dir, skill_dir])
+    assert result.count("<skill>") == 1
+    assert result.count("</skill>") == 1
+
+
+def test_max_skills_limit(tmp_path):
+    """Exceeding MAX_SKILLS_PER_PROMPT raises SkillError."""
+    skill_dirs = []
+    for i in range(MAX_SKILLS_PER_PROMPT + 1):
+        d = tmp_path / f"skill-{i}"
+        d.mkdir()
+        (d / "SKILL.md").write_text(f"""---
+name: skill-{i}
+description: Skill {i}
+---
+Body
+""")
+        skill_dirs.append(d)
+
+    with pytest.raises(SkillError) as excinfo:
+        to_prompt(skill_dirs)
+    assert f"exceeds the limit of {MAX_SKILLS_PER_PROMPT}" in str(excinfo.value)

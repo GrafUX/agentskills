@@ -305,7 +305,13 @@ def test_internal_parsing_error_is_sanitized(monkeypatch):
     """Non-YAMLError from strictyaml.load must produce a sanitized message."""
     import skills_ref.parser as parser_module
 
-    monkeypatch.setattr(parser_module.strictyaml, "load", lambda *a, **kw: (_ for _ in ()).throw(AttributeError("secret internal detail")))
+    monkeypatch.setattr(
+        parser_module.strictyaml,
+        "load",
+        lambda *a, **kw: (_ for _ in ()).throw(
+            AttributeError("secret internal detail")
+        ),
+    )
 
     content = "---\nname: my-skill\n---\nbody"
     with pytest.raises(ParseError) as exc_info:

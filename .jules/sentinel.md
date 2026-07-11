@@ -61,3 +61,8 @@
 **Vulnerability:** Untrusted inputs (like skill names or invalid YAML) were echoed directly into error messages without length limits. An attacker could provide a 4096-character name or massive invalid YAML to generate extremely large error strings, potentially causing DoS in logging systems or downstream UI consumers.
 **Learning:** Reflecting untrusted input in error messages is a common source of both information leakage and resource exhaustion. Even if the input itself is limited (e.g., to 4096 chars), concatenating multiple such inputs or including large library-generated error excerpts can create unexpectedly large payloads.
 **Prevention:** Always truncate untrusted data and external library error messages when including them in application-level exceptions or user-facing output.
+
+## 2024-07-25 - [Type-Confusion DoS via Object Stringification Bypass]
+**Vulnerability:** The length checks on `license`, `allowed-tools`, and `compatibility` in both `parser.py` and `validator.py` were performed after type checks (`isinstance`). An attacker could provide a massive list or dictionary instead of a string, bypassing the length check entirely. When the object was later stringified, it could cause memory exhaustion or CPU spikes (Denial of Service).
+**Learning:** Type checks alone are insufficient if the object is later stringified. Attackers can leverage type confusion to inject massive objects that bypass string-specific length limits.
+**Prevention:** Always apply length checks to the stringified representation of untrusted input (`len(str(val))`) before performing type validation, ensuring that massive objects are rejected before they can cause harm.

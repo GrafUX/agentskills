@@ -2,7 +2,7 @@
 
 import unicodedata
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 from .constants import (
     MAX_ALLOWED_TOOLS_LENGTH,
@@ -90,55 +90,54 @@ def _validate_description(description: str) -> list[str]:
     return errors
 
 
-def _validate_compatibility(compatibility: str) -> list[str]:
-    """Validate compatibility format."""
+def _validate_string_field(
+    value: Any,
+    field_name: str,
+    max_length: int,
+    display_name: str,
+    plural: bool = False,
+) -> list[str]:
+    """Validate string field type and maximum length (with DoS mitigation)."""
     errors = []
 
-    if not isinstance(compatibility, str):
-        errors.append("Field 'compatibility' must be a string")
+    # Enforce maximum string length limits on the stringified value first to prevent DoS via resource exhaustion.
+    str_value = str(value)
+    if len(str_value) > max_length:
+        verb = "exceed" if plural else "exceeds"
+        errors.append(
+            f"{display_name} {verb} {max_length} character limit "
+            f"({len(str_value)} chars)"
+        )
         return errors
 
-    if len(compatibility) > MAX_COMPATIBILITY_LENGTH:
-        errors.append(
-            f"Compatibility exceeds {MAX_COMPATIBILITY_LENGTH} character limit "
-            f"({len(compatibility)} chars)"
-        )
+    if not isinstance(value, str):
+        errors.append(f"Field '{field_name}' must be a string")
+        return errors
 
     return errors
+
+
+def _validate_compatibility(compatibility: str) -> list[str]:
+    """Validate compatibility format."""
+    return _validate_string_field(
+        compatibility, "compatibility", MAX_COMPATIBILITY_LENGTH, "Compatibility"
+    )
 
 
 def _validate_license(license_str: str) -> list[str]:
     """Validate license format."""
-    errors = []
-
-    if not isinstance(license_str, str):
-        errors.append("Field 'license' must be a string")
-        return errors
-
-    if len(license_str) > MAX_LICENSE_LENGTH:
-        errors.append(
-            f"License exceeds {MAX_LICENSE_LENGTH} character limit "
-            f"({len(license_str)} chars)"
-        )
-
-    return errors
+    return _validate_string_field(license_str, "license", MAX_LICENSE_LENGTH, "License")
 
 
 def _validate_allowed_tools(allowed_tools: str) -> list[str]:
     """Validate allowed-tools format."""
-    errors = []
-
-    if not isinstance(allowed_tools, str):
-        errors.append("Field 'allowed-tools' must be a string")
-        return errors
-
-    if len(allowed_tools) > MAX_ALLOWED_TOOLS_LENGTH:
-        errors.append(
-            f"Allowed tools exceed {MAX_ALLOWED_TOOLS_LENGTH} character limit "
-            f"({len(allowed_tools)} chars)"
-        )
-
-    return errors
+    return _validate_string_field(
+        allowed_tools,
+        "allowed-tools",
+        MAX_ALLOWED_TOOLS_LENGTH,
+        "Allowed tools",
+        plural=True,
+    )
 
 
 def _validate_metadata_dict(custom_metadata: dict) -> list[str]:

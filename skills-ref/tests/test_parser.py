@@ -305,7 +305,13 @@ def test_internal_parsing_error_is_sanitized(monkeypatch):
     """Non-YAMLError from strictyaml.load must produce a sanitized message."""
     import skills_ref.parser as parser_module
 
-    monkeypatch.setattr(parser_module.strictyaml, "load", lambda *a, **kw: (_ for _ in ()).throw(AttributeError("secret internal detail")))
+    monkeypatch.setattr(
+        parser_module.strictyaml,
+        "load",
+        lambda *a, **kw: (_ for _ in ()).throw(
+            AttributeError("secret internal detail")
+        ),
+    )
 
     content = "---\nname: my-skill\n---\nbody"
     with pytest.raises(ParseError) as exc_info:
@@ -313,3 +319,52 @@ def test_internal_parsing_error_is_sanitized(monkeypatch):
 
     assert "Internal parsing error" in str(exc_info.value)
     assert "secret internal detail" not in str(exc_info.value)
+
+
+def test_parse_frontmatter_generic_exception():
+    """YAML with unprintable control characters raises a generic exception during strictyaml.load."""
+    content = "---\nname: 'test\033[31mred\033[0m'\ndescription: desc\n---\nbody"
+    with pytest.raises(ParseError) as exc_info:
+        parse_frontmatter(content)
+
+    assert "Invalid YAML in frontmatter: Internal parsing error" in str(exc_info.value)
+
+
+def test_parse_frontmatter_strictyaml_generic_exception(monkeypatch):
+    """An unhandled generic Exception during strictyaml.load raises ParseError."""
+    import skills_ref.parser as parser_module
+
+    monkeypatch.setattr(
+        parser_module.strictyaml,
+        "load",
+        lambda *a, **kw: (_ for _ in ()).throw(
+            RuntimeError("An unhandled runtime error occurred")
+        ),
+    )
+
+    content = "---\nname: my-skill\n---\nbody"
+    with pytest.raises(ParseError) as exc_info:
+        parse_frontmatter(content)
+
+    assert "Invalid YAML in frontmatter: Internal parsing error" in str(exc_info.value)
+    assert "An unhandled runtime error occurred" not in str(exc_info.value)
+
+
+def test_parse_frontmatter_long_yaml_error(monkeypatch):
+    """Test that extremely long YAML error messages are truncated to 1000 characters."""
+    import strictyaml
+    import skills_ref.parser as parser_module
+
+    long_err_msg = "x" * 1200
+    monkeypatch.setattr(
+        parser_module.strictyaml,
+        "load",
+        lambda *a, **kw: (_ for _ in ()).throw(strictyaml.YAMLError(long_err_msg)),
+    )
+
+    content = "---\nname: my-skill\n---\nbody"
+    with pytest.raises(ParseError) as exc_info:
+        parse_frontmatter(content)
+
+    assert len(str(exc_info.value)) <= 1050  # 1000 chars + prefix and trailing dots
+    assert str(exc_info.value).endswith("...")

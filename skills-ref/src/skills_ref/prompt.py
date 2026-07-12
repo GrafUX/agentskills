@@ -3,6 +3,8 @@
 import html
 from pathlib import Path
 
+from .constants import MAX_SKILLS_PER_PROMPT
+from .errors import SkillError
 from .parser import find_skill_md, read_properties
 
 
@@ -33,37 +35,45 @@ def to_prompt(skill_dirs: list[Path]) -> str:
         return "<available_skills>\n</available_skills>"
 
     lines = ["<available_skills>"]
+    seen = set()
 
-    for skill_dir in skill_dirs:
+    for d in skill_dirs:
         try:
-            skill_dir = Path(skill_dir).resolve()
-            props = read_properties(skill_dir)
-        except (OSError, RuntimeError) as e:
-            from .errors import SkillError
+            skill_dir = Path(d).resolve()
+            if skill_dir in seen:
+                continue
 
+            if len(seen) >= MAX_SKILLS_PER_PROMPT:
+                raise SkillError(
+                    f"Number of skills exceeds maximum limit of {MAX_SKILLS_PER_PROMPT}"
+                )
+
+            props = read_properties(skill_dir)
+            seen.add(skill_dir)
+
+            lines.append("<skill>")
+            lines.append("<name>")
+            lines.append(html.escape(props.name))
+            lines.append("</name>")
+            lines.append("<description>")
+            lines.append(html.escape(props.description))
+            lines.append("</description>")
+
+            skill_md_path = find_skill_md(skill_dir)
+            lines.append("<location>")
+            lines.append(html.escape(str(skill_md_path)))
+            lines.append("</location>")
+
+            lines.append("</skill>")
+        except (OSError, RuntimeError) as e:
             error_msg = (
                 str(e.strerror)
                 if hasattr(e, "strerror")
                 else "Symlink loop or unresolvable path"
             )
             raise SkillError(
-                f"Failed to resolve skill directory {Path(skill_dir).name}: {error_msg}"
+                f"Failed to process skill directory {Path(d).name}: {error_msg}"
             )
-
-        lines.append("<skill>")
-        lines.append("<name>")
-        lines.append(html.escape(props.name))
-        lines.append("</name>")
-        lines.append("<description>")
-        lines.append(html.escape(props.description))
-        lines.append("</description>")
-
-        skill_md_path = find_skill_md(skill_dir)
-        lines.append("<location>")
-        lines.append(html.escape(str(skill_md_path)))
-        lines.append("</location>")
-
-        lines.append("</skill>")
 
     lines.append("</available_skills>")
 

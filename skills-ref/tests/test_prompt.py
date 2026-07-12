@@ -72,6 +72,43 @@ Body
     assert "<bar>" not in result
 
 
+def test_deduplication(tmp_path):
+    """Duplicate skill directories are de-duplicated."""
+    skill_dir = tmp_path / "dedup-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("""---
+name: dedup-skill
+description: A test skill
+---
+Body
+""")
+    # Same directory, and a symbolic link to it if possible
+    paths = [skill_dir, skill_dir]
+
+    result = to_prompt(paths)
+    assert result.count("<skill>") == 1
+
+
+def test_max_skills_limit(tmp_path, monkeypatch):
+    """Providing too many skills raises SkillError."""
+    from skills_ref.constants import MAX_SKILLS_PER_PROMPT
+    from skills_ref.errors import SkillError
+
+    # We don't actually need to create many directories, we can mock the input
+    # or just use many copies of the same if we didn't have dedup,
+    # but we DO have dedup, so we need unique paths.
+    skill_dirs = []
+    for i in range(MAX_SKILLS_PER_PROMPT + 1):
+        d = tmp_path / f"skill-{i}"
+        d.mkdir()
+        (d / "SKILL.md").write_text(f"---\nname: skill-{i}\ndescription: desc\n---\n")
+        skill_dirs.append(d)
+
+    with pytest.raises(SkillError) as excinfo:
+        to_prompt(skill_dirs)
+    assert f"exceeds maximum limit of {MAX_SKILLS_PER_PROMPT}" in str(excinfo.value)
+
+
 @pytest.mark.skipif(
     sys.platform == "win32", reason="Windows does not support < or > in paths"
 )

@@ -61,3 +61,8 @@
 **Vulnerability:** Untrusted inputs (like skill names or invalid YAML) were echoed directly into error messages without length limits. An attacker could provide a 4096-character name or massive invalid YAML to generate extremely large error strings, potentially causing DoS in logging systems or downstream UI consumers.
 **Learning:** Reflecting untrusted input in error messages is a common source of both information leakage and resource exhaustion. Even if the input itself is limited (e.g., to 4096 chars), concatenating multiple such inputs or including large library-generated error excerpts can create unexpectedly large payloads.
 **Prevention:** Always truncate untrusted data and external library error messages when including them in application-level exceptions or user-facing output.
+
+## 2025-07-22 - [Prompt Inflation & DoS via Unbounded Skill Lists]
+**Vulnerability:** The `to_prompt` function accepted an unbounded list of skill directories and processed each one, including potential duplicates or symlinks to the same directory. This could lead to Resource Exhaustion (Prompt Inflation) by exceeding the LLM context window or consuming excessive CPU/IO.
+**Learning:** When processing collections of external inputs that are used to build a larger payload (like an LLM prompt), both the count of items and the uniqueness of items must be enforced.
+**Prevention:** Use `Path.resolve()` to canonicalize and de-duplicate input directories, and enforce a strict maximum count (`MAX_SKILLS_PER_PROMPT`) within the processing loop to fail early.

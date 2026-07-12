@@ -61,3 +61,8 @@
 **Vulnerability:** Untrusted inputs (like skill names or invalid YAML) were echoed directly into error messages without length limits. An attacker could provide a 4096-character name or massive invalid YAML to generate extremely large error strings, potentially causing DoS in logging systems or downstream UI consumers.
 **Learning:** Reflecting untrusted input in error messages is a common source of both information leakage and resource exhaustion. Even if the input itself is limited (e.g., to 4096 chars), concatenating multiple such inputs or including large library-generated error excerpts can create unexpectedly large payloads.
 **Prevention:** Always truncate untrusted data and external library error messages when including them in application-level exceptions or user-facing output.
+
+## 2026-01-13 - XSS via Unvalidated URL in JSX Components
+**Vulnerability:** Direct assignment of potentially untrusted data to href attributes in LogoCarousel.jsx and ClientShowcase.jsx without protocol validation.
+**Learning:** Assigning raw URL strings to href attributes on anchor tags (`<a>`) in React/JSX allows javascript: or data: URIs, leading to Cross-Site Scripting (XSS) if the client URL input can be influenced by users or external data.
+**Prevention:** Strictly sanitize URL strings to ensure they only start with allowed secure protocols (http://, https://) or safe relative paths (/), returning a fallback string otherwise.

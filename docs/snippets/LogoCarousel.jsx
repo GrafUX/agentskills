@@ -3,6 +3,24 @@
   Shuffles clients on each page load for fair exposure.
 */}
 export const LogoCarousel = ({clients}) => {
+  const sanitizeUrl = (url) => {
+    if (!url) return '#';
+    const trimmed = url.trim();
+    const cleanOriginal = trimmed.replace(/[\x00-\x1F\x7F-\x9F\s]/g, "");
+    if (/^(?:javascript|data|vbscript):/i.test(cleanOriginal)) {
+      return '#';
+    }
+    try {
+      const decoded = decodeURIComponent(trimmed).replace(/[\x00-\x1F\x7F-\x9F\s]/g, "");
+      if (/^(?:javascript|data|vbscript):/i.test(decoded)) {
+        return '#';
+      }
+    } catch (e) {
+      // ignore
+    }
+    return url;
+  };
+
   const [shuffled, setShuffled] = useState(clients);
 
   /* Shuffle clients on component mount */
@@ -29,7 +47,7 @@ export const LogoCarousel = ({clients}) => {
   const cycleDuration = cycleWidth / PX_PER_SECOND;
 
   const Logo = ({ client }) => (
-    <a href={client.url} className="block no-underline border-none w-full h-full">
+    <a href={sanitizeUrl(client.url)} className="block no-underline border-none w-full h-full">
       <img className="block dark:hidden object-contain w-full h-full !my-0" src={client.lightSrc} alt={client.name} noZoom />
       <img className="hidden dark:block object-contain w-full h-full !my-0" src={client.darkSrc} alt={client.name} noZoom />
     </a>

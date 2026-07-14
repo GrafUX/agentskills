@@ -110,22 +110,25 @@ def test_max_skills_limit(tmp_path, monkeypatch):
 
 
 def test_max_skill_directory_inputs_limit(tmp_path):
-    """Providing too many input directories raises SkillError before resolving all paths."""
+    """Providing too many skill directory inputs raises SkillError before resolve."""
     from skills_ref.constants import MAX_SKILLS_PER_PROMPT
     from skills_ref.errors import SkillError
 
-    skill_dir = tmp_path / "skill"
+    skill_dir = tmp_path / "repeated-skill"
     skill_dir.mkdir()
     (skill_dir / "SKILL.md").write_text("""---
-name: skill
-description: desc
+name: repeated-skill
+description: A test skill
 ---
 Body
 """)
 
     with pytest.raises(SkillError) as excinfo:
         to_prompt([skill_dir] * (MAX_SKILLS_PER_PROMPT + 1))
-    assert f"exceeds maximum limit of {MAX_SKILLS_PER_PROMPT}" in str(excinfo.value)
+    assert (
+        f"Number of skill directories exceeds maximum limit of {MAX_SKILLS_PER_PROMPT}"
+        in str(excinfo.value)
+    )
 
 
 @pytest.mark.skipif(

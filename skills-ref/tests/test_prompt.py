@@ -82,7 +82,7 @@ description: A test skill
 ---
 Body
 """)
-    # Same directory, and a symbolic link to it if possible
+    # Same directory provided twice
     paths = [skill_dir, skill_dir]
 
     result = to_prompt(paths)

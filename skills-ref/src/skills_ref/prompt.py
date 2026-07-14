@@ -3,6 +3,8 @@
 import html
 from pathlib import Path
 
+from .constants import MAX_SKILLS_PER_PROMPT
+from .errors import SkillError
 from .parser import find_skill_md, read_properties
 
 
@@ -32,15 +34,16 @@ def to_prompt(skill_dirs: list[Path]) -> str:
     if not skill_dirs:
         return "<available_skills>\n</available_skills>"
 
-    lines = ["<available_skills>"]
-
+    # De-duplicate skill directories using Path.resolve()
+    unique_skill_dirs = []
+    seen_paths = set()
     for skill_dir in skill_dirs:
         try:
-            skill_dir = Path(skill_dir).resolve()
-            props = read_properties(skill_dir)
+            resolved_path = Path(skill_dir).resolve()
+            if resolved_path not in seen_paths:
+                seen_paths.add(resolved_path)
+                unique_skill_dirs.append(resolved_path)
         except (OSError, RuntimeError) as e:
-            from .errors import SkillError
-
             error_msg = (
                 str(e.strerror)
                 if hasattr(e, "strerror")
@@ -48,6 +51,26 @@ def to_prompt(skill_dirs: list[Path]) -> str:
             )
             raise SkillError(
                 f"Failed to resolve skill directory {Path(skill_dir).name}: {error_msg}"
+            )
+
+    if len(unique_skill_dirs) > MAX_SKILLS_PER_PROMPT:
+        raise SkillError(
+            f"Number of skills exceeds the limit of {MAX_SKILLS_PER_PROMPT}"
+        )
+
+    lines = ["<available_skills>"]
+
+    for skill_dir in unique_skill_dirs:
+        try:
+            props = read_properties(skill_dir)
+        except (OSError, RuntimeError) as e:
+            error_msg = (
+                str(e.strerror)
+                if hasattr(e, "strerror")
+                else "Symlink loop or unresolvable path"
+            )
+            raise SkillError(
+                f"Failed to read properties for {Path(skill_dir).name}: {error_msg}"
             )
 
         lines.append("<skill>")

@@ -34,6 +34,11 @@ def to_prompt(skill_dirs: list[Path]) -> str:
     if not skill_dirs:
         return "<available_skills>\n</available_skills>"
 
+    if len(skill_dirs) > MAX_SKILLS_PER_PROMPT:
+        raise SkillError(
+            f"Number of skill directories exceeds maximum limit of {MAX_SKILLS_PER_PROMPT}"
+        )
+
     lines = ["<available_skills>"]
     seen = set()
 

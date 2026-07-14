@@ -1,0 +1,147 @@
+diff --git a/.jules/sentinel.md b/.jules/sentinel.md
+index 3d9a8ac..5797f6f 100644
+--- a/.jules/sentinel.md
++++ b/.jules/sentinel.md
+@@ -61,3 +61,8 @@
+ **Vulnerability:** Untrusted inputs (like skill names or invalid YAML) were echoed directly into error messages without length limits. An attacker could provide a 4096-character name or massive invalid YAML to generate extremely large error strings, potentially causing DoS in logging systems or downstream UI consumers.
+ **Learning:** Reflecting untrusted input in error messages is a common source of both information leakage and resource exhaustion. Even if the input itself is limited (e.g., to 4096 chars), concatenating multiple such inputs or including large library-generated error excerpts can create unexpectedly large payloads.
+ **Prevention:** Always truncate untrusted data and external library error messages when including them in application-level exceptions or user-facing output.
++
++## 2025-07-22 - [Prompt Inflation & DoS via Unbounded Skill Lists]
++**Vulnerability:** In `prompt.py`, the `to_prompt` function did not de-duplicate skill directories or limit the total number of skills included in the generated prompt. An attacker could provide thousands of duplicate or unique paths to exhaust the LLM's context window or cause a Denial of Service.
++**Learning:** Even when individual components (like single skills) have strict resource limits, the collection of those components at an application boundary (like prompt generation) must also be bounded.
++**Prevention:** Implement collection-level limits (e.g., `MAX_SKILLS_PER_PROMPT`) and resolve/de-duplicate paths early in processing pipelines that aggregate data into large payloads like LLM prompts.
+diff --git a/skills-ref/src/skills_ref/constants.py b/skills-ref/src/skills_ref/constants.py
+index 2428b4d..d16c5fe 100644
+--- a/skills-ref/src/skills_ref/constants.py
++++ b/skills-ref/src/skills_ref/constants.py
+@@ -10,3 +10,4 @@ MAX_METADATA_VALUE_LENGTH = 1024
+ MAX_METADATA_KEYS_COUNT = 50
+ MAX_FRONTMATTER_FIELDS_COUNT = 50
+ MAX_FRONTMATTER_VALUE_LENGTH = 4096
++MAX_SKILLS_PER_PROMPT = 100
+diff --git a/skills-ref/src/skills_ref/prompt.py b/skills-ref/src/skills_ref/prompt.py
+index 5ae2d71..62054d7 100644
+--- a/skills-ref/src/skills_ref/prompt.py
++++ b/skills-ref/src/skills_ref/prompt.py
+@@ -3,6 +3,7 @@
+ import html
+ from pathlib import Path
+
++from .constants import MAX_SKILLS_PER_PROMPT
+ from .parser import find_skill_md, read_properties
+
+
+@@ -32,11 +33,40 @@ def to_prompt(skill_dirs: list[Path]) -> str:
+     if not skill_dirs:
+         return "<available_skills>\n</available_skills>"
+
++    # Resolve and de-duplicate skill directories to prevent prompt inflation
++    # and resource exhaustion attacks via duplicate paths.
++    unique_dirs = []
++    seen_paths = set()
++
++    for d in skill_dirs:
++        try:
++            resolved = Path(d).resolve()
++            if resolved not in seen_paths:
++                seen_paths.add(resolved)
++                unique_dirs.append(resolved)
++        except (OSError, RuntimeError) as e:
++            from .errors import SkillError
++
++            error_msg = (
++                str(e.strerror)
++                if hasattr(e, "strerror")
++                else "Symlink loop or unresolvable path"
++            )
++            raise SkillError(
++                f"Failed to resolve skill directory {Path(d).name}: {error_msg}"
++            )
++
++    if len(unique_dirs) > MAX_SKILLS_PER_PROMPT:
++        from .errors import SkillError
++
++        raise SkillError(
++            f"Too many skills provided. Limit is {MAX_SKILLS_PER_PROMPT} skills per prompt."
++        )
++
+     lines = ["<available_skills>"]
+
+-    for skill_dir in skill_dirs:
++    for skill_dir in unique_dirs:
+         try:
+-            skill_dir = Path(skill_dir).resolve()
+             props = read_properties(skill_dir)
+         except (OSError, RuntimeError) as e:
+             from .errors import SkillError
+diff --git a/skills-ref/tests/test_parser.py b/skills-ref/tests/test_parser.py
+index caef25c..219c26b 100644
+--- a/skills-ref/tests/test_parser.py
++++ b/skills-ref/tests/test_parser.py
+@@ -305,7 +305,13 @@ def test_internal_parsing_error_is_sanitized(monkeypatch):
+     """Non-YAMLError from strictyaml.load must produce a sanitized message."""
+     import skills_ref.parser as parser_module
+
+-    monkeypatch.setattr(parser_module.strictyaml, "load", lambda *a, **kw: (_ for _ in ()).throw(AttributeError("secret internal detail")))
++    monkeypatch.setattr(
++        parser_module.strictyaml,
++        "load",
++        lambda *a, **kw: (_ for _ in ()).throw(
++            AttributeError("secret internal detail")
++        ),
++    )
+
+     content = "---\nname: my-skill\n---\nbody"
+     with pytest.raises(ParseError) as exc_info:
+diff --git a/skills-ref/tests/test_prompt.py b/skills-ref/tests/test_prompt.py
+index f9d5c08..c401ffe 100644
+--- a/skills-ref/tests/test_prompt.py
++++ b/skills-ref/tests/test_prompt.py
+@@ -90,3 +90,46 @@ Body
+     assert "&lt;" in result
+     assert "&gt;" in result
+     assert "special-location-&-<>" not in result
++
++
++def test_duplicate_skills_deduplicated(tmp_path):
++    """Duplicate skill directories are only included once in the prompt."""
++    skill_dir = tmp_path / "my-skill"
++    skill_dir.mkdir()
++    (skill_dir / "SKILL.md").write_text("""---
++name: my-skill
++description: A test skill
++---
++Body
++""")
++    # Pass the same skill directory twice (direct path and relative path that resolves to same)
++    result = to_prompt([skill_dir, skill_dir])
++    assert result.count("<skill>") == 1
++
++    import os
++
++    rel_path = os.path.relpath(skill_dir)
++    result = to_prompt([skill_dir, rel_path])
++    assert result.count("<skill>") == 1
++
++
++def test_too_many_skills_raises_error(tmp_path):
++    """Exceeding MAX_SKILLS_PER_PROMPT raises a SkillError."""
++    from skills_ref.constants import MAX_SKILLS_PER_PROMPT
++    from skills_ref.errors import SkillError
++
++    skill_dirs = []
++    for i in range(MAX_SKILLS_PER_PROMPT + 1):
++        d = tmp_path / f"skill-{i}"
++        d.mkdir()
++        (d / "SKILL.md").write_text(f"""---
++name: skill-{i}
++description: desc {i}
++---
++Body
++""")
++        skill_dirs.append(d)
++
++    with pytest.raises(SkillError) as excinfo:
++        to_prompt(skill_dirs)
++    assert f"Limit is {MAX_SKILLS_PER_PROMPT} skills per prompt" in str(excinfo.value)

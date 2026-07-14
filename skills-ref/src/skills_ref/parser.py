@@ -120,6 +120,26 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
     return metadata, body
 
 
+def _check_string_length(metadata: dict, field_name: str, max_length: int) -> None:
+    """Validate string length limits and type of metadata fields parsed from SKILL.md.
+
+    First verifies that the field is a string, then checks its length.
+    """
+    if field_name not in metadata:
+        return
+    value = metadata[field_name]
+    if value is None:
+        return
+
+    if not isinstance(value, str):
+        raise ValidationError(f"Field '{field_name}' must be a string")
+
+    if len(value) > max_length:
+        raise ValidationError(
+            f"Field '{field_name}' exceeds {max_length} character limit"
+        )
+
+
 def read_properties(skill_dir: Path) -> SkillProperties:
     """Read skill properties from SKILL.md frontmatter.
 
@@ -181,32 +201,13 @@ def read_properties(skill_dir: Path) -> SkillProperties:
             f"Field 'description' exceeds {MAX_DESCRIPTION_LENGTH} character limit"
         )
 
+    _check_string_length(metadata, "license", MAX_LICENSE_LENGTH)
+    _check_string_length(metadata, "compatibility", MAX_COMPATIBILITY_LENGTH)
+    _check_string_length(metadata, "allowed-tools", MAX_ALLOWED_TOOLS_LENGTH)
+
     license_val = metadata.get("license")
-    if license_val is not None:
-        if not isinstance(license_val, str):
-            raise ValidationError("Field 'license' must be a string")
-        if len(license_val) > MAX_LICENSE_LENGTH:
-            raise ValidationError(
-                f"Field 'license' exceeds {MAX_LICENSE_LENGTH} character limit"
-            )
-
     comp_val = metadata.get("compatibility")
-    if comp_val is not None:
-        if not isinstance(comp_val, str):
-            raise ValidationError("Field 'compatibility' must be a string")
-        if len(comp_val) > MAX_COMPATIBILITY_LENGTH:
-            raise ValidationError(
-                f"Field 'compatibility' exceeds {MAX_COMPATIBILITY_LENGTH} character limit"
-            )
-
     tools_val = metadata.get("allowed-tools")
-    if tools_val is not None:
-        if not isinstance(tools_val, str):
-            raise ValidationError("Field 'allowed-tools' must be a string")
-        if len(tools_val) > MAX_ALLOWED_TOOLS_LENGTH:
-            raise ValidationError(
-                f"Field 'allowed-tools' exceeds {MAX_ALLOWED_TOOLS_LENGTH} character limit"
-            )
 
     custom_metadata = metadata.get("metadata")
     if custom_metadata is not None:

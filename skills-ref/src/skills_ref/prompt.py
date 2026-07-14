@@ -41,10 +41,7 @@ def to_prompt(skill_dirs: list[Path]) -> str:
     for d in skill_dirs:
         try:
             resolved = Path(d).resolve()
-            if resolved not in seen_paths:
-                seen_paths.add(resolved)
-                unique_dirs.append(resolved)
-        except (OSError, RuntimeError) as e:
+        except (TypeError, OSError, RuntimeError) as e:
             from .errors import SkillError
 
             error_msg = (
@@ -56,12 +53,15 @@ def to_prompt(skill_dirs: list[Path]) -> str:
                 f"Failed to resolve skill directory {Path(d).name}: {error_msg}"
             )
 
-    if len(unique_dirs) > MAX_SKILLS_PER_PROMPT:
-        from .errors import SkillError
+        if resolved not in seen_paths:
+            seen_paths.add(resolved)
+            unique_dirs.append(resolved)
+            if len(unique_dirs) > MAX_SKILLS_PER_PROMPT:
+                from .errors import SkillError
 
-        raise SkillError(
-            f"Too many skills provided. Limit is {MAX_SKILLS_PER_PROMPT} skills per prompt."
-        )
+                raise SkillError(
+                    f"Too many skills provided. Limit is {MAX_SKILLS_PER_PROMPT} skills per prompt."
+                )
 
     lines = ["<available_skills>"]
 
@@ -74,10 +74,10 @@ def to_prompt(skill_dirs: list[Path]) -> str:
             error_msg = (
                 str(e.strerror)
                 if hasattr(e, "strerror")
-                else "Symlink loop or unresolvable path"
+                else "Failed to read skill properties"
             )
             raise SkillError(
-                f"Failed to resolve skill directory {Path(skill_dir).name}: {error_msg}"
+                f"Failed to read skill properties for {skill_dir.name}: {error_msg}"
             )
 
         lines.append("<skill>")

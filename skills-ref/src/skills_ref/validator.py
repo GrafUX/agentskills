@@ -175,7 +175,10 @@ def _validate_metadata_fields(metadata: dict) -> list[str]:
     """Validate that only allowed fields are present."""
     errors = []
 
-    extra_fields = sorted(set(metadata.keys()) - ALLOWED_FIELDS)
+    # Convert keys to strings before set operations to prevent TypeErrors
+    stringified_keys = {str(k) for k in metadata.keys()}
+    extra_fields = sorted(stringified_keys - ALLOWED_FIELDS)
+
     if extra_fields:
         display_extra = ", ".join(extra_fields)
         if len(display_extra) > 500:
@@ -202,6 +205,10 @@ def validate_metadata(metadata: dict, skill_dir: Optional[Path] = None) -> list[
         List of validation error messages. Empty list means valid.
     """
     errors = []
+
+    if not isinstance(metadata, dict):
+        return ["SKILL.md frontmatter must be a YAML mapping"]
+
     errors.extend(_validate_metadata_fields(metadata))
 
     if "name" not in metadata:

@@ -416,3 +416,26 @@ Body
 """)
     errors = validate(skill_dir)
     assert any(f"exceeds {MAX_METADATA_KEYS_COUNT} keys limit" in e for e in errors)
+
+
+def test_validate_metadata_non_dict():
+    """Test that validate_metadata safely handles non-dictionary inputs."""
+    from skills_ref.validator import validate_metadata
+
+    # Passing a string instead of dict
+    errors = validate_metadata("invalid string metadata")
+    assert len(errors) == 1
+    assert "SKILL.md frontmatter must be a YAML mapping" in errors[0]
+
+
+def test_validate_metadata_non_string_keys():
+    """Test that validate_metadata safely handles non-string keys in frontmatter."""
+    from skills_ref.validator import validate_metadata
+
+    # Passing a dict with an integer key (simulate strictyaml behavior)
+    errors = validate_metadata(
+        {"name": "test-skill", "description": "desc", 1: "value"}
+    )
+
+    # Should flag the '1' field as unexpected but not crash with TypeError
+    assert any("Unexpected fields in frontmatter: 1" in e for e in errors)

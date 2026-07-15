@@ -5,7 +5,7 @@ from pathlib import Path
 
 from .constants import MAX_SKILLS_PER_PROMPT
 from .errors import SkillError
-from .parser import find_skill_md, read_properties
+from .parser import _safe_name, find_skill_md, read_properties
 
 
 def to_prompt(skill_dirs: list[Path]) -> str:
@@ -50,7 +50,7 @@ def to_prompt(skill_dirs: list[Path]) -> str:
                 else "Symlink loop or unresolvable path"
             )
             raise SkillError(
-                f"Failed to resolve skill directory {Path(skill_dir).name}: {error_msg}"
+                f"Failed to resolve skill directory {_safe_name(Path(skill_dir))}: {error_msg}"
             )
 
     if len(unique_skill_dirs) > MAX_SKILLS_PER_PROMPT:
@@ -70,7 +70,7 @@ def to_prompt(skill_dirs: list[Path]) -> str:
                 else "Symlink loop or unresolvable path"
             )
             raise SkillError(
-                f"Failed to read properties for {Path(skill_dir).name}: {error_msg}"
+                f"Failed to read properties for {_safe_name(Path(skill_dir))}: {error_msg}"
             )
 
         lines.append("<skill>")

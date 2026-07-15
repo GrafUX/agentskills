@@ -97,3 +97,43 @@ def test_to_prompt_deduplication(tmp_path):
     skill_dirs = [skill_dir] * (MAX_SKILLS_PER_PROMPT + 1)
     result = to_prompt(skill_dirs)
     assert result.count("<skill>") == 1
+
+
+def test_error_message_sanitization(tmp_path):
+    # Test ANSI stripping and truncation in error messages
+    evil_name = "evil_\x1b[31mHACKED\x1b[0m_" + "A" * 200
+    evil_dir = tmp_path / evil_name
+    evil_dir.mkdir()
+    # Missing SKILL.md will trigger ParseError in read_properties
+
+    from skills_ref.parser import read_properties
+
+    with pytest.raises(ParseError) as excinfo:
+        read_properties(evil_dir)
+
+    err_msg = str(excinfo.value)
+    # Check for truncation (default 100 + "...")
+    assert len(err_msg) < 150
+    assert "..." in err_msg
+    # Check for ANSI stripping
+    assert "\x1b[31m" not in err_msg
+    assert "HACKED" in err_msg
+
+
+def test_metadata_key_sanitization():
+    # Test sanitization of metadata keys in ParseError
+    # We use a key that is valid and NOT triggering strictyaml's ANSI bug
+    # but exceeds MAX_METADATA_KEY_LENGTH to ensure it triggers our manual
+    # length check which uses _safe_name
+    from skills_ref.constants import MAX_METADATA_KEY_LENGTH
+
+    long_key = "K" * (MAX_METADATA_KEY_LENGTH + 1)
+    content = f"---\nname: skill\ndescription: desc\n{long_key}: value\n---\nbody"
+
+    with pytest.raises(ParseError) as excinfo:
+        parse_frontmatter(content)
+
+    err_msg = str(excinfo.value)
+    assert len(err_msg) < 200
+    assert "..." in err_msg
+    assert long_key[:MAX_METADATA_KEY_LENGTH] in err_msg

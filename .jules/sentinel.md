@@ -66,3 +66,8 @@
 **Vulnerability:** The `to_prompt` function accepted an unbounded list of skill directories and processed all of them into the final XML output. An attacker could provide thousands of (potentially redundant) skill paths to cause "Prompt Inflation", exhausting the LLM's context window or causing DoS in the prompt generation service.
 **Learning:** Resource limits must be applied not just to individual items (like file size or field length) but also to collections of items. De-duplication is a critical step when processing paths that might be aliased or repeated to ensure limits are effectively applied to unique resources.
 **Prevention:** Enforce a hard limit on the number of unique items allowed in a collection (e.g., `MAX_SKILLS_PER_PROMPT`) and perform de-duplication (using `Path.resolve()`) before enforcing the limit.
+
+## 2026-07-17 - [Resource Exhaustion via Unbounded Path resolution DoS]
+**Vulnerability:** In `to_prompt`, an unbounded list of raw/lexically distinct or duplicate paths was processed using `Path.resolve()`. If an attacker provided a huge list of paths (e.g. 100,000 duplicates or distinct items), the application would execute 100,000 expensive OS-level filesystem resolution checks, leading to resource exhaustion (CPU/IO Denial of Service).
+**Learning:** Performing filesystem / OS-level operations (like `resolve()`) on an unbounded collection of inputs before applying size/limit constraints is highly dangerous. Lexical de-duplication and pre-filtering are essential defense-in-depth measures.
+**Prevention:** Perform raw / lexical de-duplication (such as using a string/Path set) and validate collection limits (fail-fast) before executing any filesystem or external operations on elements of the collection.

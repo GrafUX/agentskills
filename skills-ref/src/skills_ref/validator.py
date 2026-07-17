@@ -15,7 +15,8 @@ from .constants import (
     MAX_FILE_SIZE,
 )
 from .errors import ParseError
-from .parser import _safe_name, _sanitize_error_text, find_skill_md, parse_frontmatter
+from .parser import find_skill_md, parse_frontmatter
+from .sanitization import safe_name, sanitize_error_text
 
 # Allowed frontmatter fields per Agent Skills Spec
 ALLOWED_FIELDS = {
@@ -42,7 +43,7 @@ def _validate_name(name: str, skill_dir: Path) -> list[str]:
 
     name = unicodedata.normalize("NFKC", name.strip())
 
-    display_name = _safe_name(name)
+    display_name = safe_name(name)
     if len(name) > MAX_SKILL_NAME_LENGTH:
         errors.append(
             f"Skill name '{display_name}' exceeds {MAX_SKILL_NAME_LENGTH} character limit "
@@ -68,7 +69,7 @@ def _validate_name(name: str, skill_dir: Path) -> list[str]:
         dir_name = unicodedata.normalize("NFKC", skill_dir.name)
         if dir_name != name:
             errors.append(
-                f"Directory name '{_safe_name(skill_dir.name)}' must match skill name '{display_name}'"
+                f"Directory name '{safe_name(skill_dir.name)}' must match skill name '{display_name}'"
             )
 
     return errors
@@ -155,7 +156,7 @@ def _validate_metadata_dict(custom_metadata: dict) -> list[str]:
             errors.append("Metadata keys must be strings")
             continue
 
-        display_k = _sanitize_error_text(k, max_len=100)
+        display_k = sanitize_error_text(k, max_len=100)
         if len(k) > MAX_METADATA_KEY_LENGTH:
             errors.append(
                 f"Metadata key '{display_k}' exceeds {MAX_METADATA_KEY_LENGTH} character limit"
@@ -178,7 +179,7 @@ def _validate_metadata_fields(metadata: dict) -> list[str]:
 
     extra_fields = sorted(set(metadata.keys()) - ALLOWED_FIELDS)
     if extra_fields:
-        display_extra = _sanitize_error_text(", ".join(extra_fields), max_len=500)
+        display_extra = sanitize_error_text(", ".join(extra_fields), max_len=500)
         errors.append(
             f"Unexpected fields in frontmatter: {display_extra}. "
             f"Only {sorted(ALLOWED_FIELDS)} are allowed."
@@ -241,10 +242,10 @@ def validate(skill_dir: Path) -> list[str]:
 
     try:
         if not skill_dir.exists():
-            return [f"Path does not exist: {_safe_name(skill_dir.name)}"]
+            return [f"Path does not exist: {safe_name(skill_dir.name)}"]
 
         if not skill_dir.is_dir():
-            return [f"Not a directory: {_safe_name(skill_dir.name)}"]
+            return [f"Not a directory: {safe_name(skill_dir.name)}"]
 
         skill_md = find_skill_md(skill_dir)
         if skill_md is None:
@@ -254,20 +255,20 @@ def validate(skill_dir: Path) -> list[str]:
             content = f.read(MAX_FILE_SIZE + 1)
             if len(content) > MAX_FILE_SIZE:
                 return [
-                    f"SKILL.md in {_safe_name(skill_dir.name)} exceeds 1MB size limit"
+                    f"SKILL.md in {safe_name(skill_dir.name)} exceeds 1MB size limit"
                 ]
         metadata, _ = parse_frontmatter(content)
     except OSError as e:
         return [
-            f"Failed to read SKILL.md in {_safe_name(skill_dir.name)}: {_sanitize_error_text(str(e.strerror))}"
+            f"Failed to read SKILL.md in {safe_name(skill_dir.name)}: {sanitize_error_text(str(e.strerror))}"
         ]
     except UnicodeDecodeError:
-        return [f"SKILL.md in {_safe_name(skill_dir.name)} is not valid UTF-8"]
+        return [f"SKILL.md in {safe_name(skill_dir.name)} is not valid UTF-8"]
     except ParseError as e:
         return [str(e)]
     except RuntimeError:
         return [
-            f"Failed to read SKILL.md in {_safe_name(skill_dir.name)}: Symlink loop or unresolvable path"
+            f"Failed to read SKILL.md in {safe_name(skill_dir.name)}: Symlink loop or unresolvable path"
         ]
 
     return validate_metadata(metadata, skill_dir)

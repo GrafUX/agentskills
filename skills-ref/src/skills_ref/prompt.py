@@ -35,10 +35,27 @@ def to_prompt(skill_dirs: list[Path]) -> str:
     if not skill_dirs:
         return "<available_skills>\n</available_skills>"
 
-    # De-duplicate skill directories using Path.resolve()
+    # Lexically de-duplicate skill directories to prevent redundant resolve() calls
+    unique_raw_dirs = []
+    seen_raw = set()
+    for skill_dir in skill_dirs:
+        try:
+            norm_path = Path(skill_dir)
+            if norm_path not in seen_raw:
+                seen_raw.add(norm_path)
+                unique_raw_dirs.append(norm_path)
+        except Exception:
+            unique_raw_dirs.append(skill_dir)
+
+    if len(seen_raw) > MAX_SKILLS_PER_PROMPT:
+        raise SkillError(
+            f"Number of skills exceeds the limit of {MAX_SKILLS_PER_PROMPT}"
+        )
+
+    # De-duplicate resolved skill directories using Path.resolve()
     unique_skill_dirs = []
     seen_paths = set()
-    for skill_dir in skill_dirs:
+    for skill_dir in unique_raw_dirs:
         try:
             resolved_path = Path(skill_dir).resolve()
             if resolved_path not in seen_paths:

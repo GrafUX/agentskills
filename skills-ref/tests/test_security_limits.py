@@ -1,3 +1,4 @@
+from pathlib import Path
 import pytest
 from skills_ref.parser import parse_frontmatter
 from skills_ref.errors import ParseError
@@ -97,3 +98,14 @@ def test_to_prompt_deduplication(tmp_path):
     skill_dirs = [skill_dir] * (MAX_SKILLS_PER_PROMPT + 1)
     result = to_prompt(skill_dirs)
     assert result.count("<skill>") == 1
+
+
+def test_to_prompt_raw_uniqueness_limit_exceeded():
+    # Pass too many distinct path objects (without creating folders/files)
+    # This should fail fast in the lexical uniqueness check before calling resolve()
+    skill_dirs = [Path(f"skill-{i}") for i in range(MAX_SKILLS_PER_PROMPT + 1)]
+    with pytest.raises(SkillError) as excinfo:
+        to_prompt(skill_dirs)
+    assert f"Number of skills exceeds the limit of {MAX_SKILLS_PER_PROMPT}" in str(
+        excinfo.value
+    )

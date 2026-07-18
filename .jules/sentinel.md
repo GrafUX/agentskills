@@ -66,7 +66,3 @@
 **Vulnerability:** In `prompt.py`, the `to_prompt` function did not de-duplicate skill directories or limit the total number of skills included in the generated prompt. An attacker could provide thousands of duplicate or unique paths to exhaust the LLM's context window or cause a Denial of Service.
 **Learning:** Even when individual components (like single skills) have strict resource limits, the collection of those components at an application boundary (like prompt generation) must also be bounded.
 **Prevention:** Implement collection-level limits (e.g., `MAX_SKILLS_PER_PROMPT`) and resolve/de-duplicate paths early in processing pipelines that aggregate data into large payloads like LLM prompts.
-## 2024-05-18 - Type Confusion in API entrypoint DoS
-**Vulnerability:** Type confusion crash (DoS) triggered by bypassing parser to call `validate_metadata` directly with malformed metadata (e.g. non-dictionary structure or integer keys).
-**Learning:** Public API entrypoints, even if primarily consumed internally after parsing, must validate parameter types. Assuming only strings and dicts exist based on parser guarantees breaks when the API is invoked directly. Un-casted dictionary keys crashed sorting and string join operations.
-**Prevention:** Always explicitly validate root parameter structures (e.g., `isinstance(metadata, dict)`) at API entry boundaries, and proactively cast potentially untrusted dictionary keys to expected types (e.g., `str(k)`) before performing sequence operations like sort or join.

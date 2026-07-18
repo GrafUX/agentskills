@@ -8,6 +8,34 @@ from .errors import SkillError
 from .parser import find_skill_md, read_properties, _safe_name
 
 
+def _skill_to_xml_lines(skill_dir: Path) -> list[str]:
+    """Generate the XML lines for a single skill directory.
+
+    Args:
+        skill_dir: Path to the resolved skill directory.
+
+    Returns:
+        A list of strings representing the XML lines for the skill.
+    """
+    props = read_properties(skill_dir)
+    skill_md_path = find_skill_md(skill_dir)
+
+    lines = [
+        "<skill>",
+        "<name>",
+        html.escape(props.name),
+        "</name>",
+        "<description>",
+        html.escape(props.description),
+        "</description>",
+        "<location>",
+        html.escape(str(skill_md_path)),
+        "</location>",
+        "</skill>",
+    ]
+    return lines
+
+
 def to_prompt(skill_dirs: list[Path]) -> str:
     """Generate the <available_skills> XML block for inclusion in agent prompts.
 
@@ -54,23 +82,9 @@ def to_prompt(skill_dirs: list[Path]) -> str:
             if skill_dir in seen:
                 continue
 
-            props = read_properties(skill_dir)
+            skill_xml_lines = _skill_to_xml_lines(skill_dir)
             seen.add(skill_dir)
-
-            lines.append("<skill>")
-            lines.append("<name>")
-            lines.append(html.escape(props.name))
-            lines.append("</name>")
-            lines.append("<description>")
-            lines.append(html.escape(props.description))
-            lines.append("</description>")
-
-            skill_md_path = find_skill_md(skill_dir)
-            lines.append("<location>")
-            lines.append(html.escape(str(skill_md_path)))
-            lines.append("</location>")
-
-            lines.append("</skill>")
+            lines.extend(skill_xml_lines)
         except (OSError, RuntimeError) as e:
             error_msg = getattr(e, "strerror", None)
             if not error_msg:

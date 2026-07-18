@@ -77,3 +77,8 @@
 **Vulnerability:** When generating error/exception messages or logging paths, raw directory/file name strings were interpolated directly without sanitization. An attacker supplying a maliciously named folder containing ANSI escape sequences or control codes could manipulate console output, pollute logs, or trigger local terminal behavior.
 **Learning:** Any file system component name (such as directory or file names) provided by users or external repositories must be treated as untrusted and potentially malicious if reflected back in output.
 **Prevention:** Sanitize all untrusted inputs reflected in error messages or logs by stripping ANSI escape sequences and non-printable control characters. Truncate reflected path or directory names to a fixed length (e.g., 64 characters) to mitigate Denial of Service (DoS) from log bloat.
+
+## 2026-10-14 - [Log Manipulation and ANSI Injection via Frontmatter Key Reflection]
+**Vulnerability:** Untrusted YAML frontmatter keys from SKILL.md were truncated but not sanitized of ANSI escape sequences or non-printable control characters before being formatted into a `ParseError` message.
+**Learning:** Keys parsed from user-controlled frontmatter YAML must be treated as untrusted input. If reflected into exceptions/logs as raw strings, an attacker can manipulate output, pollute logs, or inject ANSI codes.
+**Prevention:** Sanitize and format frontmatter keys using safety functions like `_safe_name(key, max_len=100)` before embedding them into any raised errors or logs.

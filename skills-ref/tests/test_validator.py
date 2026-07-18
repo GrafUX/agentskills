@@ -1,6 +1,6 @@
 """Tests for validator module."""
 
-from skills_ref.validator import validate
+from skills_ref.validator import validate, validate_metadata
 
 
 def test_valid_skill(tmp_path):
@@ -416,3 +416,156 @@ Body
 """)
     errors = validate(skill_dir)
     assert any(f"exceeds {MAX_METADATA_KEYS_COUNT} keys limit" in e for e in errors)
+
+
+def test_validate_metadata_happy_path():
+    """Test validate_metadata with completely valid input."""
+    meta = {
+        "name": "my-skill",
+        "description": "A very useful test skill",
+        "compatibility": "Compatible with GPT-4",
+        "license": "MIT",
+        "allowed-tools": "Bash(jq:*)",
+        "metadata": {"version": "1.0.0", "author": "Jules"},
+    }
+    errors = validate_metadata(meta)
+    assert errors == []
+
+
+def test_validate_metadata_not_a_dictionary():
+    """Test validate_metadata when input is not a dictionary."""
+    errors = validate_metadata("not a dictionary")
+    assert len(errors) == 1
+    assert "must be a dictionary" in errors[0]
+
+    errors = validate_metadata(None)
+    assert len(errors) == 1
+    assert "must be a dictionary" in errors[0]
+
+    errors = validate_metadata([1, 2, 3])
+    assert len(errors) == 1
+    assert "must be a dictionary" in errors[0]
+
+
+def test_validate_metadata_missing_required_fields():
+    """Test validate_metadata when required fields are missing."""
+    errors = validate_metadata({})
+    assert any("Missing required field in frontmatter: name" in e for e in errors)
+    assert any(
+        "Missing required field in frontmatter: description" in e for e in errors
+    )
+
+
+def test_validate_metadata_invalid_types():
+    """Test validate_metadata when standard fields have invalid types."""
+    meta_name_list = {
+        "name": ["not", "a", "string"],
+        "description": "Valid description",
+    }
+    errors = validate_metadata(meta_name_list)
+    assert any("Field 'name' must be a non-empty string" in e for e in errors)
+
+    meta_desc_int = {"name": "my-skill", "description": 12345}
+    errors = validate_metadata(meta_desc_int)
+    assert any("Field 'description' must be a non-empty string" in e for e in errors)
+
+    meta_compat_dict = {
+        "name": "my-skill",
+        "description": "Valid description",
+        "compatibility": {"version": 1},
+    }
+    errors = validate_metadata(meta_compat_dict)
+    assert any("Field 'compatibility' must be a string" in e for e in errors)
+
+    meta_license_list = {
+        "name": "my-skill",
+        "description": "Valid description",
+        "license": ["MIT", "Apache"],
+    }
+    errors = validate_metadata(meta_license_list)
+    assert any("Field 'license' must be a string" in e for e in errors)
+
+    meta_tools_bool = {
+        "name": "my-skill",
+        "description": "Valid description",
+        "allowed-tools": True,
+    }
+    errors = validate_metadata(meta_tools_bool)
+    assert any("Field 'allowed-tools' must be a string" in e for e in errors)
+
+
+def test_validate_metadata_mixed_key_types_security():
+    """Test validate_metadata with non-string/mixed key types in the top-level metadata dict.
+
+    This ensures that sorting or set operations on keys do not trigger a TypeError DoS.
+    """
+    meta = {
+        "name": "my-skill",
+        "description": "A valid description",
+        123: "non-string key",
+        None: "another non-string key",
+    }
+    errors = validate_metadata(meta)
+    # The non-string keys are unexpected fields and should be safely reported
+    assert len(errors) > 0
+    assert any("Unexpected fields in frontmatter" in e for e in errors)
+    assert any("123" in e for e in errors)
+    assert any("None" in e for e in errors)
+
+
+def test_validate_metadata_custom_metadata_security():
+    """Test nested metadata dict structure and mixed key types in the metadata block."""
+    meta = {
+        "name": "my-skill",
+        "description": "A valid description",
+        "metadata": {
+            999: "integer key",
+            "valid_key": ["not", "a", "string", "value"],
+            "another_key": {"nested": "dict"},
+        },
+    }
+    errors = validate_metadata(meta)
+    assert len(errors) > 0
+    assert any("Metadata keys must be strings" in e for e in errors)
+    assert any("Metadata value for 'valid_key' must be a string" in e for e in errors)
+    assert any("Metadata value for 'another_key' must be a string" in e for e in errors)
+
+
+def test_validate_metadata_field_length_limits():
+    """Test validate_metadata field length boundary/limits."""
+    # Exceed name limit
+    meta_name_long = {"name": "x" * 150, "description": "Valid description"}
+    errors = validate_metadata(meta_name_long)
+    assert any("exceeds" in e and "character limit" in e for e in errors)
+
+    # Exceed description limit
+    meta_desc_long = {"name": "my-skill", "description": "x" * 2000}
+    errors = validate_metadata(meta_desc_long)
+    assert any("exceeds" in e and "character limit" in e for e in errors)
+
+    # Exceed compatibility limit
+    meta_compat_long = {
+        "name": "my-skill",
+        "description": "Valid description",
+        "compatibility": "x" * 600,
+    }
+    errors = validate_metadata(meta_compat_long)
+    assert any("exceeds" in e and "character limit" in e for e in errors)
+
+    # Exceed license limit
+    meta_license_long = {
+        "name": "my-skill",
+        "description": "Valid description",
+        "license": "x" * 150,
+    }
+    errors = validate_metadata(meta_license_long)
+    assert any("exceeds" in e and "character limit" in e for e in errors)
+
+    # Exceed allowed-tools limit
+    meta_tools_long = {
+        "name": "my-skill",
+        "description": "Valid description",
+        "allowed-tools": "x" * 1200,
+    }
+    errors = validate_metadata(meta_tools_long)
+    assert any("exceed" in e and "character limit" in e for e in errors)

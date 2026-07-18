@@ -34,56 +34,50 @@ def to_prompt(skill_dirs: list[Path]) -> str:
     if not skill_dirs:
         return "<available_skills>\n</available_skills>"
 
-    # Resolve and de-duplicate skill directories to prevent prompt inflation
-    # and resource exhaustion attacks via duplicate paths.
-    unique_dirs = []
-    seen_paths = set()
+    if len(skill_dirs) > MAX_SKILLS_PER_PROMPT:
+        raise SkillError(
+            f"Number of skill directories exceeds maximum limit of {MAX_SKILLS_PER_PROMPT}"
+        )
+
+    lines = ["<available_skills>"]
+    seen = set()
     resolved_cache = {}
 
     for d in skill_dirs:
         path = Path(d)
         try:
-            resolved = resolved_cache.get(path)
-            if resolved is None:
-                resolved = path.resolve()
-                resolved_cache[path] = resolved
-            if resolved not in seen_paths:
-                unique_dirs.append(resolved)
-                seen_paths.add(resolved)
+            skill_dir = resolved_cache.get(path)
+            if skill_dir is None:
+                skill_dir = path.resolve()
+                resolved_cache[path] = skill_dir
+
+            if skill_dir in seen:
+                continue
+
+            props = read_properties(skill_dir)
+            seen.add(skill_dir)
+
+            lines.append("<skill>")
+            lines.append("<name>")
+            lines.append(html.escape(props.name))
+            lines.append("</name>")
+            lines.append("<description>")
+            lines.append(html.escape(props.description))
+            lines.append("</description>")
+
+            skill_md_path = find_skill_md(skill_dir)
+            lines.append("<location>")
+            lines.append(html.escape(str(skill_md_path)))
+            lines.append("</location>")
+
+            lines.append("</skill>")
         except (OSError, RuntimeError) as e:
-            error_msg = (
-                str(e.strerror)
-                if hasattr(e, "strerror")
-                else "Symlink loop or unresolvable path"
-            )
+            error_msg = getattr(e, "strerror", None)
+            if not error_msg:
+                error_msg = "Symlink loop or unresolvable path"
             raise SkillError(
-                f"Failed to resolve skill directory {path.name}: {error_msg}"
+                f"Failed to process skill directory {path.name}: {error_msg}"
             )
-
-    if len(unique_dirs) > MAX_SKILLS_PER_PROMPT:
-        raise SkillError(
-            f"Number of skills ({len(unique_dirs)}) exceeds the limit of {MAX_SKILLS_PER_PROMPT} per prompt"
-        )
-
-    lines = ["<available_skills>"]
-
-    for skill_dir in unique_dirs:
-        props = read_properties(skill_dir)
-
-        lines.append("<skill>")
-        lines.append("<name>")
-        lines.append(html.escape(props.name))
-        lines.append("</name>")
-        lines.append("<description>")
-        lines.append(html.escape(props.description))
-        lines.append("</description>")
-
-        skill_md_path = find_skill_md(skill_dir)
-        lines.append("<location>")
-        lines.append(html.escape(str(skill_md_path)))
-        lines.append("</location>")
-
-        lines.append("</skill>")
 
     lines.append("</available_skills>")
 

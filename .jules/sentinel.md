@@ -63,6 +63,6 @@
 **Prevention:** Always truncate untrusted data and external library error messages when including them in application-level exceptions or user-facing output.
 
 ## 2025-07-22 - [Prompt Inflation & DoS via Unbounded Skill Lists]
-**Vulnerability:** In `prompt.py`, the `to_prompt` function did not de-duplicate skill directories or limit the total number of skills included in the generated prompt. An attacker could provide thousands of duplicate or unique paths to exhaust the LLM's context window or cause a Denial of Service.
-**Learning:** Even when individual components (like single skills) have strict resource limits, the collection of those components at an application boundary (like prompt generation) must also be bounded.
-**Prevention:** Implement collection-level limits (e.g., `MAX_SKILLS_PER_PROMPT`) and resolve/de-duplicate paths early in processing pipelines that aggregate data into large payloads like LLM prompts.
+**Vulnerability:** The `to_prompt` function accepted an unbounded list of skill directories and processed each one, including potential duplicates or symlinks to the same directory. This could lead to Resource Exhaustion (Prompt Inflation) by exceeding the LLM context window or consuming excessive CPU/IO.
+**Learning:** When processing collections of external inputs that are used to build a larger payload, both the total number of supplied items and the number of unique resolved items must be bounded.
+**Prevention:** Reject oversized input lists before resolving every path, use `Path.resolve()` to canonicalize and de-duplicate directories, and enforce a strict maximum unique-skill count (`MAX_SKILLS_PER_PROMPT`) during prompt generation.

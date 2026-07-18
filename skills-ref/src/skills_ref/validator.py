@@ -4,12 +4,17 @@ import unicodedata
 from pathlib import Path
 from typing import Optional
 
+from .constants import (
+    MAX_ALLOWED_TOOLS_LENGTH,
+    MAX_COMPATIBILITY_LENGTH,
+    MAX_DESCRIPTION_LENGTH,
+    MAX_LICENSE_LENGTH,
+    MAX_METADATA_KEY_LENGTH,
+    MAX_METADATA_VALUE_LENGTH,
+    MAX_SKILL_NAME_LENGTH,
+)
 from .errors import ParseError
 from .parser import find_skill_md, parse_frontmatter
-
-MAX_SKILL_NAME_LENGTH = 64
-MAX_DESCRIPTION_LENGTH = 1024
-MAX_COMPATIBILITY_LENGTH = 500
 
 # Allowed frontmatter fields per Agent Skills Spec
 ALLOWED_FIELDS = {
@@ -36,14 +41,15 @@ def _validate_name(name: str, skill_dir: Path) -> list[str]:
 
     name = unicodedata.normalize("NFKC", name.strip())
 
+    display_name = name if len(name) <= 100 else name[:100] + "..."
     if len(name) > MAX_SKILL_NAME_LENGTH:
         errors.append(
-            f"Skill name '{name}' exceeds {MAX_SKILL_NAME_LENGTH} character limit "
+            f"Skill name '{display_name}' exceeds {MAX_SKILL_NAME_LENGTH} character limit "
             f"({len(name)} chars)"
         )
 
     if name != name.lower():
-        errors.append(f"Skill name '{name}' must be lowercase")
+        errors.append(f"Skill name '{display_name}' must be lowercase")
 
     if name.startswith("-") or name.endswith("-"):
         errors.append("Skill name cannot start or end with a hyphen")
@@ -53,7 +59,7 @@ def _validate_name(name: str, skill_dir: Path) -> list[str]:
 
     if not all(c.isalnum() or c == "-" for c in name):
         errors.append(
-            f"Skill name '{name}' contains invalid characters. "
+            f"Skill name '{display_name}' contains invalid characters. "
             "Only letters, digits, and hyphens are allowed."
         )
 
@@ -61,7 +67,7 @@ def _validate_name(name: str, skill_dir: Path) -> list[str]:
         dir_name = unicodedata.normalize("NFKC", skill_dir.name)
         if dir_name != name:
             errors.append(
-                f"Directory name '{skill_dir.name}' must match skill name '{name}'"
+                f"Directory name '{skill_dir.name}' must match skill name '{display_name}'"
             )
 
     return errors
@@ -101,14 +107,81 @@ def _validate_compatibility(compatibility: str) -> list[str]:
     return errors
 
 
+def _validate_license(license_str: str) -> list[str]:
+    """Validate license format."""
+    errors = []
+
+    if not isinstance(license_str, str):
+        errors.append("Field 'license' must be a string")
+        return errors
+
+    if len(license_str) > MAX_LICENSE_LENGTH:
+        errors.append(
+            f"License exceeds {MAX_LICENSE_LENGTH} character limit "
+            f"({len(license_str)} chars)"
+        )
+
+    return errors
+
+
+def _validate_allowed_tools(allowed_tools: str) -> list[str]:
+    """Validate allowed-tools format."""
+    errors = []
+
+    if not isinstance(allowed_tools, str):
+        errors.append("Field 'allowed-tools' must be a string")
+        return errors
+
+    if len(allowed_tools) > MAX_ALLOWED_TOOLS_LENGTH:
+        errors.append(
+            f"Allowed tools exceed {MAX_ALLOWED_TOOLS_LENGTH} character limit "
+            f"({len(allowed_tools)} chars)"
+        )
+
+    return errors
+
+
+def _validate_metadata_dict(custom_metadata: dict) -> list[str]:
+    """Validate custom metadata structure and limits."""
+    errors = []
+
+    if not isinstance(custom_metadata, dict):
+        errors.append("Field 'metadata' must be a dictionary")
+        return errors
+
+    for k, v in custom_metadata.items():
+        if not isinstance(k, str):
+            errors.append("Metadata keys must be strings")
+            continue
+
+        display_k = k if len(k) <= 100 else k[:100] + "..."
+        if len(k) > MAX_METADATA_KEY_LENGTH:
+            errors.append(
+                f"Metadata key '{display_k}' exceeds {MAX_METADATA_KEY_LENGTH} character limit"
+            )
+
+        if not isinstance(v, str):
+            errors.append(f"Metadata value for '{display_k}' must be a string")
+            continue
+        if len(v) > MAX_METADATA_VALUE_LENGTH:
+            errors.append(
+                f"Metadata value for '{display_k}' exceeds {MAX_METADATA_VALUE_LENGTH} character limit"
+            )
+
+    return errors
+
+
 def _validate_metadata_fields(metadata: dict) -> list[str]:
     """Validate that only allowed fields are present."""
     errors = []
 
-    extra_fields = set(metadata.keys()) - ALLOWED_FIELDS
+    extra_fields = sorted(set(metadata.keys()) - ALLOWED_FIELDS)
     if extra_fields:
+        display_extra = ", ".join(extra_fields)
+        if len(display_extra) > 500:
+            display_extra = display_extra[:500] + "..."
         errors.append(
-            f"Unexpected fields in frontmatter: {', '.join(sorted(extra_fields))}. "
+            f"Unexpected fields in frontmatter: {display_extra}. "
             f"Only {sorted(ALLOWED_FIELDS)} are allowed."
         )
 
@@ -143,6 +216,15 @@ def validate_metadata(metadata: dict, skill_dir: Optional[Path] = None) -> list[
 
     if "compatibility" in metadata:
         errors.extend(_validate_compatibility(metadata["compatibility"]))
+
+    if "license" in metadata:
+        errors.extend(_validate_license(metadata["license"]))
+
+    if "allowed-tools" in metadata:
+        errors.extend(_validate_allowed_tools(metadata["allowed-tools"]))
+
+    if "metadata" in metadata:
+        errors.extend(_validate_metadata_dict(metadata["metadata"]))
 
     return errors
 
@@ -181,6 +263,8 @@ def validate(skill_dir: Path) -> list[str]:
     except ParseError as e:
         return [str(e)]
     except RuntimeError:
-        return [f"Failed to read SKILL.md in {skill_dir.name}: Symlink loop or unresolvable path"]
+        return [
+            f"Failed to read SKILL.md in {skill_dir.name}: Symlink loop or unresolvable path"
+        ]
 
     return validate_metadata(metadata, skill_dir)

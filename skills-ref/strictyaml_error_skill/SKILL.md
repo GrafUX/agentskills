@@ -1,0 +1,2006 @@
+---
+name: strictyaml-error
+description: a skill with a strictyaml error message
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+key: value
+  - list
+
+---
+body

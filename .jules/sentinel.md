@@ -62,7 +62,7 @@
 **Learning:** Reflecting untrusted input in error messages is a common source of both information leakage and resource exhaustion. Even if the input itself is limited (e.g., to 4096 chars), concatenating multiple such inputs or including large library-generated error excerpts can create unexpectedly large payloads.
 **Prevention:** Always truncate untrusted data and external library error messages when including them in application-level exceptions or user-facing output.
 
-## 2026-07-22 - [Prompt Inflation & DoS via Unbounded Skill Count]
-**Vulnerability:** In `prompt.py`, the `to_prompt` function accepted an unbounded list of skill directories. An attacker could provide a massive list of skills (possibly including duplicates), leading to "Prompt Inflation" that exhausts the LLM context window and increases processing costs/latency (DoS).
-**Learning:** Security bounds must be enforced not only on individual field lengths but also on the *collection size* of items being injected into a security-sensitive context like an LLM prompt.
-**Prevention:** De-duplicate input collections using canonical paths and enforce a strict maximum count (`MAX_SKILLS_PER_PROMPT`) before processing.
+## 2025-07-22 - [Prompt Inflation & DoS via Unbounded Skill Lists]
+**Vulnerability:** In `prompt.py`, the `to_prompt` function did not de-duplicate skill directories or limit the total number of skills included in the generated prompt. An attacker could provide thousands of duplicate or unique paths to exhaust the LLM's context window or cause a Denial of Service.
+**Learning:** Even when individual components (like single skills) have strict resource limits, the collection of those components at an application boundary (like prompt generation) must also be bounded.
+**Prevention:** Implement collection-level limits (e.g., `MAX_SKILLS_PER_PROMPT`) and resolve/de-duplicate paths early in processing pipelines that aggregate data into large payloads like LLM prompts.

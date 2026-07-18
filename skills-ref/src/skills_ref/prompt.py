@@ -34,10 +34,12 @@ def to_prompt(skill_dirs: list[Path]) -> str:
     if not skill_dirs:
         return "<available_skills>\n</available_skills>"
 
-    # Resolve and de-duplicate skill directories
+    # Resolve and de-duplicate skill directories to prevent prompt inflation
+    # and resource exhaustion attacks via duplicate paths.
     unique_dirs = []
     seen_paths = set()
     resolved_cache = {}
+
     for d in skill_dirs:
         path = Path(d)
         try:

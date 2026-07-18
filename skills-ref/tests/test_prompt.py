@@ -106,10 +106,16 @@ description: A test skill
 ---
 Body
 """)
-    # Pass the same directory multiple times
+    # Pass the same skill directory twice (direct path and relative path that resolves to same)
     result = to_prompt([skill_dir, skill_dir, skill_dir])
     assert result.count("<skill>") == 1
     assert result.count("</skill>") == 1
+
+    import os
+
+    rel_path = os.path.relpath(skill_dir)
+    result = to_prompt([skill_dir, rel_path])
+    assert result.count("<skill>") == 1
 
 
 def test_duplicate_paths_resolved_once(tmp_path, monkeypatch):

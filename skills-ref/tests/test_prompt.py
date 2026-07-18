@@ -1,6 +1,8 @@
 """Tests for prompt module."""
 
 import sys
+from pathlib import Path
+
 import pytest
 from skills_ref.constants import MAX_SKILLS_PER_PROMPT
 from skills_ref.errors import SkillError
@@ -108,6 +110,32 @@ Body
     result = to_prompt([skill_dir, skill_dir, skill_dir])
     assert result.count("<skill>") == 1
     assert result.count("</skill>") == 1
+
+
+def test_duplicate_paths_resolved_once(tmp_path, monkeypatch):
+    """Exact duplicate paths only trigger one resolve call."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+---
+Body
+""")
+
+    resolve_calls = 0
+    original_resolve = Path.resolve
+
+    def counting_resolve(self):
+        nonlocal resolve_calls
+        resolve_calls += 1
+        return original_resolve(self)
+
+    monkeypatch.setattr(Path, "resolve", counting_resolve)
+
+    to_prompt([skill_dir, skill_dir, skill_dir])
+
+    assert resolve_calls == 1
 
 
 def test_max_skills_limit(tmp_path):

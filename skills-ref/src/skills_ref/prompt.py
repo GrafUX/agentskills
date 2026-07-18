@@ -37,9 +37,14 @@ def to_prompt(skill_dirs: list[Path]) -> str:
     # Resolve and de-duplicate skill directories
     unique_dirs = []
     seen_paths = set()
+    resolved_cache = {}
     for d in skill_dirs:
+        path = Path(d)
         try:
-            resolved = Path(d).resolve()
+            resolved = resolved_cache.get(path)
+            if resolved is None:
+                resolved = path.resolve()
+                resolved_cache[path] = resolved
             if resolved not in seen_paths:
                 unique_dirs.append(resolved)
                 seen_paths.add(resolved)
@@ -50,7 +55,7 @@ def to_prompt(skill_dirs: list[Path]) -> str:
                 else "Symlink loop or unresolvable path"
             )
             raise SkillError(
-                f"Failed to resolve skill directory {Path(d).name}: {error_msg}"
+                f"Failed to resolve skill directory {path.name}: {error_msg}"
             )
 
     if len(unique_dirs) > MAX_SKILLS_PER_PROMPT:

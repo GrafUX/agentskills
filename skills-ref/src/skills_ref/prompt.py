@@ -34,6 +34,11 @@ def to_prompt(skill_dirs: list[Path]) -> str:
     if not skill_dirs:
         return "<available_skills>\n</available_skills>"
 
+    if len(skill_dirs) > MAX_SKILLS_PER_PROMPT:
+        raise SkillError(
+            f"Number of skill directories exceeds maximum limit of {MAX_SKILLS_PER_PROMPT}"
+        )
+
     lines = ["<available_skills>"]
     seen = set()
 
@@ -66,11 +71,9 @@ def to_prompt(skill_dirs: list[Path]) -> str:
 
             lines.append("</skill>")
         except (OSError, RuntimeError) as e:
-            error_msg = (
-                str(e.strerror)
-                if hasattr(e, "strerror")
-                else "Symlink loop or unresolvable path"
-            )
+            error_msg = getattr(e, "strerror", None)
+            if not error_msg:
+                error_msg = "Symlink loop or unresolvable path"
             raise SkillError(
                 f"Failed to process skill directory {Path(d).name}: {error_msg}"
             )

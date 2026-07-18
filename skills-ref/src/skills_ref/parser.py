@@ -115,7 +115,7 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
         if not isinstance(key, str):
             raise ParseError("Frontmatter keys must be strings")
 
-        display_key = key if len(key) <= 100 else key[:100] + "..."
+        display_key = _safe_name(key, max_len=100)
         if len(key) > MAX_METADATA_KEY_LENGTH:
             raise ParseError(
                 f"Frontmatter key '{display_key}' exceeds {MAX_METADATA_KEY_LENGTH} character limit"

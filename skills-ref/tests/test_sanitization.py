@@ -84,6 +84,33 @@ def test_validator_error_uses_safe_name(tmp_path):
     assert "a" * 64 in error_str
 
 
+def test_frontmatter_key_error_uses_safe_name():
+    """Test that ParseError for frontmatter key is sanitized and truncated via _safe_name."""
+    from skills_ref.parser import parse_frontmatter, MAX_FRONTMATTER_VALUE_LENGTH
+
+    # 1. Key exceeds length limit
+    long_key = "k" * 150
+    content = f"---\n{long_key}: value\n---"
+    with pytest.raises(ParseError) as exc_info:
+        parse_frontmatter(content)
+
+    error_str = str(exc_info.value)
+    assert "Frontmatter key '" in error_str
+    assert "exceeds" in error_str
+    assert "..." in error_str
+    assert "k" * 100 in error_str
+
+    # 2. Value exceeds length limit (verifying display_key is sanitized/truncated here too)
+    short_key = "mykey"
+    long_value = "v" * (MAX_FRONTMATTER_VALUE_LENGTH + 1)
+    content_val = f"---\n{short_key}: {long_value}\n---"
+    with pytest.raises(ParseError) as exc_info:
+        parse_frontmatter(content_val)
+
+    error_str = str(exc_info.value)
+    assert f"Frontmatter value for '{short_key}' exceeds" in error_str
+
+
 def test_prompt_error_uses_safe_name(tmp_path, monkeypatch):
     """Test that prompt exceptions in to_prompt() reflect a sanitized/truncated directory name when resolve fails."""
     long_dir_name = "a" * 100 + "\x1b[31mred\x1b[0m"

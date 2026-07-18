@@ -5,7 +5,12 @@ from pathlib import Path
 
 from .constants import MAX_SKILLS_PER_PROMPT
 from .errors import SkillError
+<<<<<<< HEAD
 from .parser import _safe_name, find_skill_md, read_properties
+=======
+from .parser import find_skill_md, read_properties
+from .sanitization import safe_name, sanitize_error_text
+>>>>>>> origin/main
 
 
 def to_prompt(skill_dirs: list[Path]) -> str:
@@ -45,12 +50,16 @@ def to_prompt(skill_dirs: list[Path]) -> str:
                 unique_skill_dirs.append(resolved_path)
         except (OSError, RuntimeError) as e:
             error_msg = (
-                str(e.strerror)
+                sanitize_error_text(str(e.strerror))
                 if hasattr(e, "strerror")
                 else "Symlink loop or unresolvable path"
             )
             raise SkillError(
+<<<<<<< HEAD
                 f"Failed to resolve skill directory {_safe_name(Path(skill_dir))}: {error_msg}"
+=======
+                f"Failed to resolve skill directory {safe_name(Path(skill_dir).name)}: {error_msg}"
+>>>>>>> origin/main
             )
 
     if len(unique_skill_dirs) > MAX_SKILLS_PER_PROMPT:
@@ -65,12 +74,16 @@ def to_prompt(skill_dirs: list[Path]) -> str:
             props = read_properties(skill_dir)
         except (OSError, RuntimeError) as e:
             error_msg = (
-                str(e.strerror)
+                sanitize_error_text(str(e.strerror))
                 if hasattr(e, "strerror")
                 else "Symlink loop or unresolvable path"
             )
             raise SkillError(
+<<<<<<< HEAD
                 f"Failed to read properties for {_safe_name(Path(skill_dir))}: {error_msg}"
+=======
+                f"Failed to read properties for {safe_name(Path(skill_dir).name)}: {error_msg}"
+>>>>>>> origin/main
             )
 
         lines.append("<skill>")

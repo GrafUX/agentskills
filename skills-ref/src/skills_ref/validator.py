@@ -2,7 +2,7 @@
 
 import unicodedata
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 from .constants import (
     MAX_ALLOWED_TOOLS_LENGTH,
@@ -12,9 +12,15 @@ from .constants import (
     MAX_METADATA_KEY_LENGTH,
     MAX_METADATA_VALUE_LENGTH,
     MAX_SKILL_NAME_LENGTH,
+    MAX_FILE_SIZE,
 )
 from .errors import ParseError
+<<<<<<< HEAD
 from .parser import _safe_name, find_skill_md, parse_frontmatter
+=======
+from .parser import find_skill_md, parse_frontmatter
+from .sanitization import safe_name, sanitize_error_text
+>>>>>>> origin/main
 
 # Allowed frontmatter fields per Agent Skills Spec
 ALLOWED_FIELDS = {
@@ -41,7 +47,11 @@ def _validate_name(name: str, skill_dir: Path) -> list[str]:
 
     name = unicodedata.normalize("NFKC", name.strip())
 
+<<<<<<< HEAD
     safe_name = _safe_name(name)
+=======
+    display_name = safe_name(name)
+>>>>>>> origin/main
     if len(name) > MAX_SKILL_NAME_LENGTH:
         errors.append(
             f"Skill name '{safe_name}' exceeds {MAX_SKILL_NAME_LENGTH} character limit "
@@ -68,7 +78,11 @@ def _validate_name(name: str, skill_dir: Path) -> list[str]:
         if dir_name != name:
             safe_dir_name = _safe_name(skill_dir)
             errors.append(
+<<<<<<< HEAD
                 f"Directory name '{safe_dir_name}' must match skill name '{safe_name}'"
+=======
+                f"Directory name '{safe_name(skill_dir.name)}' must match skill name '{display_name}'"
+>>>>>>> origin/main
             )
 
     return errors
@@ -91,55 +105,54 @@ def _validate_description(description: str) -> list[str]:
     return errors
 
 
-def _validate_compatibility(compatibility: str) -> list[str]:
-    """Validate compatibility format."""
+def _validate_string_field(
+    value: Any,
+    field_name: str,
+    max_length: int,
+    display_name: str,
+    plural: bool = False,
+) -> list[str]:
+    """Validate string field type and maximum length (with DoS mitigation)."""
     errors = []
 
-    if not isinstance(compatibility, str):
-        errors.append("Field 'compatibility' must be a string")
+    # Enforce maximum string length limits on the stringified value first to prevent DoS via resource exhaustion.
+    str_value = str(value)
+    if len(str_value) > max_length:
+        verb = "exceed" if plural else "exceeds"
+        errors.append(
+            f"{display_name} {verb} {max_length} character limit "
+            f"({len(str_value)} chars)"
+        )
         return errors
 
-    if len(compatibility) > MAX_COMPATIBILITY_LENGTH:
-        errors.append(
-            f"Compatibility exceeds {MAX_COMPATIBILITY_LENGTH} character limit "
-            f"({len(compatibility)} chars)"
-        )
+    if not isinstance(value, str):
+        errors.append(f"Field '{field_name}' must be a string")
+        return errors
 
     return errors
+
+
+def _validate_compatibility(compatibility: str) -> list[str]:
+    """Validate compatibility format."""
+    return _validate_string_field(
+        compatibility, "compatibility", MAX_COMPATIBILITY_LENGTH, "Compatibility"
+    )
 
 
 def _validate_license(license_str: str) -> list[str]:
     """Validate license format."""
-    errors = []
-
-    if not isinstance(license_str, str):
-        errors.append("Field 'license' must be a string")
-        return errors
-
-    if len(license_str) > MAX_LICENSE_LENGTH:
-        errors.append(
-            f"License exceeds {MAX_LICENSE_LENGTH} character limit "
-            f"({len(license_str)} chars)"
-        )
-
-    return errors
+    return _validate_string_field(license_str, "license", MAX_LICENSE_LENGTH, "License")
 
 
 def _validate_allowed_tools(allowed_tools: str) -> list[str]:
     """Validate allowed-tools format."""
-    errors = []
-
-    if not isinstance(allowed_tools, str):
-        errors.append("Field 'allowed-tools' must be a string")
-        return errors
-
-    if len(allowed_tools) > MAX_ALLOWED_TOOLS_LENGTH:
-        errors.append(
-            f"Allowed tools exceed {MAX_ALLOWED_TOOLS_LENGTH} character limit "
-            f"({len(allowed_tools)} chars)"
-        )
-
-    return errors
+    return _validate_string_field(
+        allowed_tools,
+        "allowed-tools",
+        MAX_ALLOWED_TOOLS_LENGTH,
+        "Allowed tools",
+        plural=True,
+    )
 
 
 def _validate_metadata_dict(custom_metadata: dict) -> list[str]:
@@ -155,7 +168,11 @@ def _validate_metadata_dict(custom_metadata: dict) -> list[str]:
             errors.append("Metadata keys must be strings")
             continue
 
+<<<<<<< HEAD
         safe_k = _safe_name(k)
+=======
+        display_k = sanitize_error_text(k, max_len=100)
+>>>>>>> origin/main
         if len(k) > MAX_METADATA_KEY_LENGTH:
             errors.append(
                 f"Metadata key '{safe_k}' exceeds {MAX_METADATA_KEY_LENGTH} character limit"
@@ -176,11 +193,9 @@ def _validate_metadata_fields(metadata: dict) -> list[str]:
     """Validate that only allowed fields are present."""
     errors = []
 
-    extra_fields = sorted(set(metadata.keys()) - ALLOWED_FIELDS)
+    extra_fields = sorted(set(str(k) for k in metadata.keys()) - ALLOWED_FIELDS)
     if extra_fields:
-        display_extra = ", ".join(extra_fields)
-        if len(display_extra) > 500:
-            display_extra = display_extra[:500] + "..."
+        display_extra = sanitize_error_text(", ".join(extra_fields), max_len=500)
         errors.append(
             f"Unexpected fields in frontmatter: {display_extra}. "
             f"Only {sorted(ALLOWED_FIELDS)} are allowed."
@@ -202,6 +217,9 @@ def validate_metadata(metadata: dict, skill_dir: Optional[Path] = None) -> list[
     Returns:
         List of validation error messages. Empty list means valid.
     """
+    if not isinstance(metadata, dict):
+        return ["Frontmatter must be a dictionary"]
+
     errors = []
     errors.extend(_validate_metadata_fields(metadata))
 
@@ -244,16 +262,24 @@ def validate(skill_dir: Path) -> list[str]:
 
     try:
         if not skill_dir.exists():
+<<<<<<< HEAD
             return [f"Path does not exist: {safe_dir_name}"]
 
         if not skill_dir.is_dir():
             return [f"Not a directory: {safe_dir_name}"]
+=======
+            return [f"Path does not exist: {safe_name(skill_dir.name)}"]
+
+        if not skill_dir.is_dir():
+            return [f"Not a directory: {safe_name(skill_dir.name)}"]
+>>>>>>> origin/main
 
         skill_md = find_skill_md(skill_dir)
         if skill_md is None:
             return ["Missing required file: SKILL.md"]
 
         with open(skill_md, "r", encoding="utf-8") as f:
+<<<<<<< HEAD
             content = f.read(1024 * 1024 + 1)
             if len(content) > 1024 * 1024:
                 return [f"SKILL.md in {safe_dir_name} exceeds 1MB size limit"]
@@ -262,11 +288,29 @@ def validate(skill_dir: Path) -> list[str]:
         return [f"Failed to read SKILL.md in {safe_dir_name}: {e.strerror}"]
     except UnicodeDecodeError:
         return [f"SKILL.md in {safe_dir_name} is not valid UTF-8"]
+=======
+            content = f.read(MAX_FILE_SIZE + 1)
+            if len(content) > MAX_FILE_SIZE:
+                return [
+                    f"SKILL.md in {safe_name(skill_dir.name)} exceeds 1MB size limit"
+                ]
+        metadata, _ = parse_frontmatter(content)
+    except OSError as e:
+        return [
+            f"Failed to read SKILL.md in {safe_name(skill_dir.name)}: {sanitize_error_text(str(e.strerror))}"
+        ]
+    except UnicodeDecodeError:
+        return [f"SKILL.md in {safe_name(skill_dir.name)} is not valid UTF-8"]
+>>>>>>> origin/main
     except ParseError as e:
         return [str(e)]
     except RuntimeError:
         return [
+<<<<<<< HEAD
             f"Failed to read SKILL.md in {safe_dir_name}: Symlink loop or unresolvable path"
+=======
+            f"Failed to read SKILL.md in {safe_name(skill_dir.name)}: Symlink loop or unresolvable path"
+>>>>>>> origin/main
         ]
 
     return validate_metadata(metadata, skill_dir)

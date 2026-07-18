@@ -17,9 +17,11 @@ from .constants import (
     MAX_METADATA_KEYS_COUNT,
     MAX_METADATA_VALUE_LENGTH,
     MAX_SKILL_NAME_LENGTH,
+    MAX_FILE_SIZE,
 )
 from .errors import ParseError, ValidationError
 from .models import SkillProperties
+from .sanitization import safe_name, sanitize_error_text
 
 
 def _sanitize_error_text(text: str, max_length: int = 64) -> str:
@@ -93,9 +95,7 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
         # Catch all exceptions because strictyaml can raise non-YAMLError exceptions
         # on certain invalid inputs (e.g. AttributeError on unprintable characters)
         if isinstance(e, strictyaml.YAMLError):
-            err_msg = str(e)
-            if len(err_msg) > 1000:
-                err_msg = err_msg[:1000] + "..."
+            err_msg = sanitize_error_text(str(e), max_len=1000)
             raise ParseError(f"Invalid YAML in frontmatter: {err_msg}")
         else:
             raise ParseError("Invalid YAML in frontmatter: Internal parsing error")
@@ -112,7 +112,11 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
         if not isinstance(key, str):
             raise ParseError("Frontmatter keys must be strings")
 
+<<<<<<< HEAD
         safe_key = _safe_name(key)
+=======
+        display_key = sanitize_error_text(key, max_len=100)
+>>>>>>> origin/main
         if len(key) > MAX_METADATA_KEY_LENGTH:
             raise ParseError(
                 f"Frontmatter key '{safe_key}' exceeds {MAX_METADATA_KEY_LENGTH} character limit"
@@ -183,6 +187,7 @@ def read_properties(skill_dir: Path) -> SkillProperties:
         skill_md = find_skill_md(skill_dir)
 
         if skill_md is None:
+<<<<<<< HEAD
             raise ParseError(f"SKILL.md not found in {safe_dir_name}")
 
         with open(skill_md, "r", encoding="utf-8") as f:
@@ -196,6 +201,25 @@ def read_properties(skill_dir: Path) -> SkillProperties:
     except RuntimeError:
         raise ParseError(
             f"Failed to read SKILL.md in {safe_dir_name}: Symlink loop or unresolvable path"
+=======
+            raise ParseError(f"SKILL.md not found in {safe_name(skill_dir.name)}")
+
+        with open(skill_md, "r", encoding="utf-8") as f:
+            content = f.read(MAX_FILE_SIZE + 1)
+            if len(content) > MAX_FILE_SIZE:
+                raise ParseError(
+                    f"SKILL.md in {safe_name(skill_dir.name)} exceeds 1MB size limit"
+                )
+    except OSError as e:
+        raise ParseError(
+            f"Failed to read SKILL.md in {safe_name(skill_dir.name)}: {sanitize_error_text(str(e.strerror))}"
+        )
+    except UnicodeDecodeError:
+        raise ParseError(f"SKILL.md in {safe_name(skill_dir.name)} is not valid UTF-8")
+    except RuntimeError:
+        raise ParseError(
+            f"Failed to read SKILL.md in {safe_name(skill_dir.name)}: Symlink loop or unresolvable path"
+>>>>>>> origin/main
         )
 
     metadata, _ = parse_frontmatter(content)

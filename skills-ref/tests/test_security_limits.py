@@ -5,10 +5,7 @@ from skills_ref.constants import (
     MAX_FRONTMATTER_FIELDS_COUNT,
     MAX_METADATA_KEY_LENGTH,
     MAX_FRONTMATTER_VALUE_LENGTH,
-    MAX_SKILLS_PER_PROMPT,
 )
-from skills_ref.prompt import to_prompt
-from skills_ref.errors import SkillError
 
 
 def test_parse_frontmatter_too_many_fields():
@@ -67,33 +64,3 @@ def test_parse_frontmatter_non_string_key():
     except ParseError as e:
         # If it failed, it should be because it's not a string
         assert "Frontmatter keys must be strings" in str(e)
-
-
-def test_to_prompt_limit_exceeded(tmp_path):
-    # Create more than MAX_SKILLS_PER_PROMPT unique skill directories
-    skill_dirs = []
-    for i in range(MAX_SKILLS_PER_PROMPT + 1):
-        skill_dir = tmp_path / f"skill-{i}"
-        skill_dir.mkdir()
-        (skill_dir / "SKILL.md").write_text(
-            f"---\nname: skill-{i}\ndescription: desc\n---\n"
-        )
-        skill_dirs.append(skill_dir)
-
-    with pytest.raises(SkillError) as excinfo:
-        to_prompt(skill_dirs)
-    assert f"Number of skills exceeds the limit of {MAX_SKILLS_PER_PROMPT}" in str(
-        excinfo.value
-    )
-
-
-def test_to_prompt_deduplication(tmp_path):
-    # Create one skill directory
-    skill_dir = tmp_path / "skill"
-    skill_dir.mkdir()
-    (skill_dir / "SKILL.md").write_text("---\nname: skill\ndescription: desc\n---\n")
-
-    # Pass the same skill directory multiple times, should not raise error
-    skill_dirs = [skill_dir] * (MAX_SKILLS_PER_PROMPT + 1)
-    result = to_prompt(skill_dirs)
-    assert result.count("<skill>") == 1

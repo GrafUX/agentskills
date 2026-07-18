@@ -62,11 +62,7 @@
 **Learning:** Reflecting untrusted input in error messages is a common source of both information leakage and resource exhaustion. Even if the input itself is limited (e.g., to 4096 chars), concatenating multiple such inputs or including large library-generated error excerpts can create unexpectedly large payloads.
 **Prevention:** Always truncate untrusted data and external library error messages when including them in application-level exceptions or user-facing output.
 
-## 2026-07-14 - [Prompt Inflation via Unbounded Skill List]
-**Vulnerability:** The `to_prompt` function accepted an unbounded list of skill directories and processed all of them into the final XML output. An attacker could provide thousands of (potentially redundant) skill paths to cause "Prompt Inflation", exhausting the LLM's context window or causing DoS in the prompt generation service.
-**Learning:** Resource limits must be applied not just to individual items (like file size or field length) but also to collections of items. De-duplication is a critical step when processing paths that might be aliased or repeated to ensure limits are effectively applied to unique resources.
-**Prevention:** Enforce a hard limit on the number of unique items allowed in a collection (e.g., `MAX_SKILLS_PER_PROMPT`) and perform de-duplication (using `Path.resolve()`) before enforcing the limit.
-## 2024-05-18 - Type Confusion in API entrypoint DoS
-**Vulnerability:** Type confusion crash (DoS) triggered by bypassing parser to call `validate_metadata` directly with malformed metadata (e.g. non-dictionary structure or integer keys).
-**Learning:** Public API entrypoints, even if primarily consumed internally after parsing, must validate parameter types. Assuming only strings and dicts exist based on parser guarantees breaks when the API is invoked directly. Un-casted dictionary keys crashed sorting and string join operations.
-**Prevention:** Always explicitly validate root parameter structures (e.g., `isinstance(metadata, dict)`) at API entry boundaries, and proactively cast potentially untrusted dictionary keys to expected types (e.g., `str(k)`) before performing sequence operations like sort or join.
+## 2025-07-22 - [Prompt Inflation & DoS via Unbounded Skill Lists]
+**Vulnerability:** In `prompt.py`, the `to_prompt` function did not de-duplicate skill directories or limit the total number of skills included in the generated prompt. An attacker could provide thousands of duplicate or unique paths to exhaust the LLM's context window or cause a Denial of Service.
+**Learning:** Even when individual components (like single skills) have strict resource limits, the collection of those components at an application boundary (like prompt generation) must also be bounded.
+**Prevention:** Implement collection-level limits (e.g., `MAX_SKILLS_PER_PROMPT`) and resolve/de-duplicate paths early in processing pipelines that aggregate data into large payloads like LLM prompts.

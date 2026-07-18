@@ -424,7 +424,7 @@ def test_validate_metadata_not_dict():
 
     errors = validate_metadata("not a dict")
     assert len(errors) == 1
-    assert "Metadata must be a dictionary" in errors[0]
+    assert "Frontmatter must be a dictionary" in errors[0]
 
 
 def test_validate_metadata_non_string_keys():

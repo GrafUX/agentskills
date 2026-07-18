@@ -112,7 +112,7 @@ def test_error_message_sanitization(tmp_path):
         read_properties(evil_dir)
 
     err_msg = str(excinfo.value)
-    # Check for truncation (default 100 + "...")
+    # Check for truncation (default 64 + "...")
     assert len(err_msg) < 150
     assert "..." in err_msg
     # Check for ANSI stripping
@@ -121,13 +121,12 @@ def test_error_message_sanitization(tmp_path):
 
 
 def test_metadata_key_sanitization():
-    # Test sanitization of metadata keys in ParseError
-    # We use a key that is valid and NOT triggering strictyaml's ANSI bug
-    # but exceeds MAX_METADATA_KEY_LENGTH to ensure it triggers our manual
-    # length check which uses _safe_name
+    # Test sanitization of metadata keys in ParseError.
+    # parse_frontmatter uses sanitize_error_text(key, max_len=100) for display;
+    # use a key longer than 100 chars to ensure truncation with "..." is triggered.
     from skills_ref.constants import MAX_METADATA_KEY_LENGTH
 
-    long_key = "K" * (MAX_METADATA_KEY_LENGTH + 1)
+    long_key = "K" * (MAX_METADATA_KEY_LENGTH + 101)
     content = f"---\nname: skill\ndescription: desc\n{long_key}: value\n---\nbody"
 
     with pytest.raises(ParseError) as excinfo:
@@ -136,4 +135,4 @@ def test_metadata_key_sanitization():
     err_msg = str(excinfo.value)
     assert len(err_msg) < 200
     assert "..." in err_msg
-    assert long_key[:MAX_METADATA_KEY_LENGTH] in err_msg
+    assert long_key[:100] in err_msg

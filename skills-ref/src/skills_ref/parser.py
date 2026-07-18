@@ -1,8 +1,7 @@
 """YAML frontmatter parsing for SKILL.md files."""
 
-import re
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional
 
 import strictyaml
 
@@ -22,25 +21,6 @@ from .constants import (
 from .errors import ParseError, ValidationError
 from .models import SkillProperties
 from .sanitization import safe_name, sanitize_error_text
-
-
-def _sanitize_error_text(text: str, max_length: int = 64) -> str:
-    """Strip ANSI escape codes and truncate string for safe inclusion in error messages."""
-    if not isinstance(text, str):
-        text = str(text)
-    # Strip ANSI escape sequences
-    ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
-    sanitized = ansi_escape.sub("", text)
-    if len(sanitized) > max_length:
-        return sanitized[:max_length] + "..."
-    return sanitized
-
-
-def _safe_name(name_source: Union[str, Path]) -> str:
-    """Safely extract and sanitize name from a string or Path object."""
-    if isinstance(name_source, Path):
-        return _sanitize_error_text(name_source.name)
-    return _sanitize_error_text(str(name_source))
 
 
 def find_skill_md(skill_dir: Path) -> Optional[Path]:
@@ -112,18 +92,14 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
         if not isinstance(key, str):
             raise ParseError("Frontmatter keys must be strings")
 
-<<<<<<< HEAD
-        safe_key = _safe_name(key)
-=======
         display_key = sanitize_error_text(key, max_len=100)
->>>>>>> origin/main
         if len(key) > MAX_METADATA_KEY_LENGTH:
             raise ParseError(
-                f"Frontmatter key '{safe_key}' exceeds {MAX_METADATA_KEY_LENGTH} character limit"
+                f"Frontmatter key '{display_key}' exceeds {MAX_METADATA_KEY_LENGTH} character limit"
             )
         if isinstance(value, str) and len(value) > MAX_FRONTMATTER_VALUE_LENGTH:
             raise ParseError(
-                f"Frontmatter value for '{safe_key}' exceeds {MAX_FRONTMATTER_VALUE_LENGTH} character limit"
+                f"Frontmatter value for '{display_key}' exceeds {MAX_FRONTMATTER_VALUE_LENGTH} character limit"
             )
 
     if "metadata" in metadata and isinstance(metadata["metadata"], dict):
@@ -182,26 +158,10 @@ def read_properties(skill_dir: Path) -> SkillProperties:
     """
     skill_dir = Path(skill_dir)
 
-    safe_dir_name = _safe_name(skill_dir)
     try:
         skill_md = find_skill_md(skill_dir)
 
         if skill_md is None:
-<<<<<<< HEAD
-            raise ParseError(f"SKILL.md not found in {safe_dir_name}")
-
-        with open(skill_md, "r", encoding="utf-8") as f:
-            content = f.read(1024 * 1024 + 1)
-            if len(content) > 1024 * 1024:
-                raise ParseError(f"SKILL.md in {safe_dir_name} exceeds 1MB size limit")
-    except OSError as e:
-        raise ParseError(f"Failed to read SKILL.md in {safe_dir_name}: {e.strerror}")
-    except UnicodeDecodeError:
-        raise ParseError(f"SKILL.md in {safe_dir_name} is not valid UTF-8")
-    except RuntimeError:
-        raise ParseError(
-            f"Failed to read SKILL.md in {safe_dir_name}: Symlink loop or unresolvable path"
-=======
             raise ParseError(f"SKILL.md not found in {safe_name(skill_dir.name)}")
 
         with open(skill_md, "r", encoding="utf-8") as f:
@@ -219,7 +179,6 @@ def read_properties(skill_dir: Path) -> SkillProperties:
     except RuntimeError:
         raise ParseError(
             f"Failed to read SKILL.md in {safe_name(skill_dir.name)}: Symlink loop or unresolvable path"
->>>>>>> origin/main
         )
 
     metadata, _ = parse_frontmatter(content)

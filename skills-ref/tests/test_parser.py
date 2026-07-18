@@ -319,3 +319,30 @@ def test_internal_parsing_error_is_sanitized(monkeypatch):
 
     assert "Internal parsing error" in str(exc_info.value)
     assert "secret internal detail" not in str(exc_info.value)
+
+
+def test_find_skill_md_handles_oserror(monkeypatch):
+    """find_skill_md should return None and handle OSError."""
+    from pathlib import Path
+
+    def mock_is_file(self):
+        raise OSError("Permission denied")
+
+    monkeypatch.setattr(Path, "is_file", mock_is_file)
+
+    # We pass a Path object, when find_skill_md checks path.is_file(), it raises OSError
+    result = find_skill_md(Path("/some/dummy/path"))
+    assert result is None
+
+
+def test_find_skill_md_handles_runtime_error(monkeypatch):
+    """find_skill_md should return None and handle RuntimeError."""
+    from pathlib import Path
+
+    def mock_is_file(self):
+        raise RuntimeError("Symlink loop")
+
+    monkeypatch.setattr(Path, "is_file", mock_is_file)
+
+    result = find_skill_md(Path("/some/dummy/path"))
+    assert result is None

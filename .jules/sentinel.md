@@ -64,5 +64,5 @@
 
 ## 2025-07-22 - [Prompt Inflation & DoS via Unbounded Skill Lists]
 **Vulnerability:** The `to_prompt` function accepted an unbounded list of skill directories and processed each one, including potential duplicates or symlinks to the same directory. This could lead to Resource Exhaustion (Prompt Inflation) by exceeding the LLM context window or consuming excessive CPU/IO.
-**Learning:** When processing collections of external inputs that are used to build a larger payload (like an LLM prompt), both the count of items and the uniqueness of items must be enforced.
-**Prevention:** Use `Path.resolve()` to canonicalize and de-duplicate input directories, and enforce a strict maximum count (`MAX_SKILLS_PER_PROMPT`) within the processing loop to fail early.
+**Learning:** When processing collections of external inputs that are used to build a larger payload, both the total number of supplied items and the number of unique resolved items must be bounded.
+**Prevention:** Reject oversized input lists before resolving every path, use `Path.resolve()` to canonicalize and de-duplicate directories, and enforce a strict maximum unique-skill count (`MAX_SKILLS_PER_PROMPT`) during prompt generation.

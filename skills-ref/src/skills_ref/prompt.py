@@ -5,7 +5,7 @@ from pathlib import Path
 
 from .constants import MAX_SKILLS_PER_PROMPT
 from .errors import SkillError
-from .parser import find_skill_md, read_properties
+from .parser import find_skill_md, read_properties, _safe_name
 
 
 def to_prompt(skill_dirs: list[Path]) -> str:
@@ -76,7 +76,7 @@ def to_prompt(skill_dirs: list[Path]) -> str:
             if not error_msg:
                 error_msg = "Symlink loop or unresolvable path"
             raise SkillError(
-                f"Failed to process skill directory {path.name}: {error_msg}"
+                f"Failed to process skill directory {_safe_name(path.name)}: {error_msg}"
             )
 
     lines.append("</available_skills>")

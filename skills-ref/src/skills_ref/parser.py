@@ -1,5 +1,6 @@
 """YAML frontmatter parsing for SKILL.md files."""
 
+import re
 from pathlib import Path
 from typing import Optional
 
@@ -19,6 +20,28 @@ from .constants import (
 )
 from .errors import ParseError, ValidationError
 from .models import SkillProperties
+
+ANSI_ESCAPE = re.compile(r"\x1b\[[0-9;?]*[a-zA-Z]")
+
+
+def _sanitize_error_text(text: str) -> str:
+    """Strip ANSI escape codes and other potentially dangerous control characters from error messages."""
+    if not isinstance(text, str):
+        return ""
+    text = ANSI_ESCAPE.sub("", text)
+    # Filter out dangerous non-printable control characters, keeping safe whitespace like \n, \r, \t
+    text = "".join(c for c in text if ord(c) >= 32 or c in "\n\r\t")
+    return text
+
+
+def _safe_name(name: str, max_len: int = 64) -> str:
+    """Sanitize and truncate untrusted strings (like directory names or inputs) reflected in error messages."""
+    if not name:
+        return ""
+    sanitized = _sanitize_error_text(name).strip()
+    if len(sanitized) > max_len:
+        return sanitized[:max_len] + "..."
+    return sanitized
 
 
 def find_skill_md(skill_dir: Path) -> Optional[Path]:
@@ -133,20 +156,22 @@ def read_properties(skill_dir: Path) -> SkillProperties:
     try:
         skill_md = find_skill_md(skill_dir)
 
+        safe_dir_name = _safe_name(skill_dir.name)
+
         if skill_md is None:
-            raise ParseError(f"SKILL.md not found in {skill_dir.name}")
+            raise ParseError(f"SKILL.md not found in {safe_dir_name}")
 
         with open(skill_md, "r", encoding="utf-8") as f:
             content = f.read(1024 * 1024 + 1)
             if len(content) > 1024 * 1024:
-                raise ParseError(f"SKILL.md in {skill_dir.name} exceeds 1MB size limit")
+                raise ParseError(f"SKILL.md in {safe_dir_name} exceeds 1MB size limit")
     except OSError as e:
-        raise ParseError(f"Failed to read SKILL.md in {skill_dir.name}: {e.strerror}")
+        raise ParseError(f"Failed to read SKILL.md in {safe_dir_name}: {e.strerror}")
     except UnicodeDecodeError:
-        raise ParseError(f"SKILL.md in {skill_dir.name} is not valid UTF-8")
+        raise ParseError(f"SKILL.md in {safe_dir_name} is not valid UTF-8")
     except RuntimeError:
         raise ParseError(
-            f"Failed to read SKILL.md in {skill_dir.name}: Symlink loop or unresolvable path"
+            f"Failed to read SKILL.md in {safe_dir_name}: Symlink loop or unresolvable path"
         )
 
     metadata, _ = parse_frontmatter(content)

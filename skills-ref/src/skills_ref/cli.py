@@ -7,7 +7,7 @@ from pathlib import Path
 import click
 
 from .errors import SkillError
-from .parser import read_properties
+from .parser import read_properties, _safe_name
 from .prompt import to_prompt
 from .validator import validate
 
@@ -46,15 +46,18 @@ def validate_cmd(skill_path: Path):
         errors = validate(skill_path)
 
         if errors:
-            click.echo(f"Validation failed for {skill_path.name}:", err=True)
+            click.echo(
+                f"Validation failed for {_safe_name(skill_path.name)}:", err=True
+            )
             for error in errors:
                 click.echo(f"  - {error}", err=True)
             sys.exit(1)
         else:
-            click.echo(f"Valid skill: {skill_path.name}")
+            click.echo(f"Valid skill: {_safe_name(skill_path.name)}")
     except Exception:
         click.echo(
-            f"An unexpected error occurred validating {skill_path.name}", err=True
+            f"An unexpected error occurred validating {_safe_name(skill_path.name)}",
+            err=True,
         )
         sys.exit(1)
 
@@ -82,7 +85,7 @@ def read_properties_cmd(skill_path: Path):
         sys.exit(1)
     except Exception:
         click.echo(
-            f"An unexpected error occurred reading properties for {skill_path.name}",
+            f"An unexpected error occurred reading properties for {_safe_name(skill_path.name)}",
             err=True,
         )
         sys.exit(1)

@@ -4,7 +4,9 @@ import html
 from pathlib import Path
 
 from .constants import MAX_SKILLS_PER_PROMPT
+from .errors import SkillError
 from .parser import find_skill_md, read_properties
+from .sanitization import safe_name, sanitize_error_text
 
 
 def to_prompt(skill_dirs: list[Path]) -> str:
@@ -42,25 +44,21 @@ def to_prompt(skill_dirs: list[Path]) -> str:
         try:
             resolved = Path(d).resolve()
         except (TypeError, OSError, RuntimeError) as e:
-            from .errors import SkillError
-
             error_msg = (
-                str(e.strerror)
+                sanitize_error_text(str(e.strerror))
                 if hasattr(e, "strerror")
                 else "Symlink loop or unresolvable path"
             )
             raise SkillError(
-                f"Failed to resolve skill directory {Path(d).name}: {error_msg}"
+                f"Failed to resolve skill directory {safe_name(Path(d).name)}: {error_msg}"
             )
 
         if resolved not in seen_paths:
             seen_paths.add(resolved)
             unique_dirs.append(resolved)
             if len(unique_dirs) > MAX_SKILLS_PER_PROMPT:
-                from .errors import SkillError
-
                 raise SkillError(
-                    f"Too many skills provided. Limit is {MAX_SKILLS_PER_PROMPT} skills per prompt."
+                    f"Too many skills provided. Number of skills exceeds the limit of {MAX_SKILLS_PER_PROMPT}."
                 )
 
     lines = ["<available_skills>"]
@@ -69,15 +67,13 @@ def to_prompt(skill_dirs: list[Path]) -> str:
         try:
             props = read_properties(skill_dir)
         except (OSError, RuntimeError) as e:
-            from .errors import SkillError
-
             error_msg = (
-                str(e.strerror)
+                sanitize_error_text(str(e.strerror))
                 if hasattr(e, "strerror")
-                else "Failed to read skill properties"
+                else "Symlink loop or unresolvable path"
             )
             raise SkillError(
-                f"Failed to read skill properties for {skill_dir.name}: {error_msg}"
+                f"Failed to read properties for {safe_name(skill_dir.name)}: {error_msg}"
             )
 
         lines.append("<skill>")

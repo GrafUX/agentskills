@@ -132,4 +132,4 @@ Body
 
     with pytest.raises(SkillError) as excinfo:
         to_prompt(skill_dirs)
-    assert f"Limit is {MAX_SKILLS_PER_PROMPT} skills per prompt" in str(excinfo.value)
+    assert f"Number of skills exceeds the limit of {MAX_SKILLS_PER_PROMPT}" in str(excinfo.value)

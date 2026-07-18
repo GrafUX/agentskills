@@ -16,9 +16,11 @@ from .constants import (
     MAX_METADATA_KEYS_COUNT,
     MAX_METADATA_VALUE_LENGTH,
     MAX_SKILL_NAME_LENGTH,
+    MAX_FILE_SIZE,
 )
 from .errors import ParseError, ValidationError
 from .models import SkillProperties
+from .sanitization import safe_name, sanitize_error_text
 
 
 def find_skill_md(skill_dir: Path) -> Optional[Path]:
@@ -73,9 +75,7 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
         # Catch all exceptions because strictyaml can raise non-YAMLError exceptions
         # on certain invalid inputs (e.g. AttributeError on unprintable characters)
         if isinstance(e, strictyaml.YAMLError):
-            err_msg = str(e)
-            if len(err_msg) > 1000:
-                err_msg = err_msg[:1000] + "..."
+            err_msg = sanitize_error_text(str(e), max_len=1000)
             raise ParseError(f"Invalid YAML in frontmatter: {err_msg}")
         else:
             raise ParseError("Invalid YAML in frontmatter: Internal parsing error")
@@ -92,7 +92,7 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
         if not isinstance(key, str):
             raise ParseError("Frontmatter keys must be strings")
 
-        display_key = key if len(key) <= 100 else key[:100] + "..."
+        display_key = sanitize_error_text(key, max_len=100)
         if len(key) > MAX_METADATA_KEY_LENGTH:
             raise ParseError(
                 f"Frontmatter key '{display_key}' exceeds {MAX_METADATA_KEY_LENGTH} character limit"
@@ -107,9 +107,37 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
             raise ParseError(
                 f"Field 'metadata' exceeds {MAX_METADATA_KEYS_COUNT} keys limit"
             )
-        metadata["metadata"] = {str(k): str(v) for k, v in metadata["metadata"].items()}
+
+        clean_metadata = {}
+        for k, v in metadata["metadata"].items():
+            if isinstance(v, (dict, list)):
+                raise ParseError(
+                    f"Complex structures not allowed in metadata values: '{k}'"
+                )
+            clean_metadata[str(k)] = str(v)
+        metadata["metadata"] = clean_metadata
 
     return metadata, body
+
+
+def _check_string_length(metadata: dict, field_name: str, max_length: int) -> None:
+    """Validate string length limits and type of metadata fields parsed from SKILL.md.
+
+    First verifies that the field is a string, then checks its length.
+    """
+    if field_name not in metadata:
+        return
+    value = metadata[field_name]
+    if value is None:
+        return
+
+    if not isinstance(value, str):
+        raise ValidationError(f"Field '{field_name}' must be a string")
+
+    if len(value) > max_length:
+        raise ValidationError(
+            f"Field '{field_name}' exceeds {max_length} character limit"
+        )
 
 
 def read_properties(skill_dir: Path) -> SkillProperties:
@@ -134,19 +162,23 @@ def read_properties(skill_dir: Path) -> SkillProperties:
         skill_md = find_skill_md(skill_dir)
 
         if skill_md is None:
-            raise ParseError(f"SKILL.md not found in {skill_dir.name}")
+            raise ParseError(f"SKILL.md not found in {safe_name(skill_dir.name)}")
 
         with open(skill_md, "r", encoding="utf-8") as f:
-            content = f.read(1024 * 1024 + 1)
-            if len(content) > 1024 * 1024:
-                raise ParseError(f"SKILL.md in {skill_dir.name} exceeds 1MB size limit")
+            content = f.read(MAX_FILE_SIZE + 1)
+            if len(content) > MAX_FILE_SIZE:
+                raise ParseError(
+                    f"SKILL.md in {safe_name(skill_dir.name)} exceeds 1MB size limit"
+                )
     except OSError as e:
-        raise ParseError(f"Failed to read SKILL.md in {skill_dir.name}: {e.strerror}")
+        raise ParseError(
+            f"Failed to read SKILL.md in {safe_name(skill_dir.name)}: {sanitize_error_text(str(e.strerror))}"
+        )
     except UnicodeDecodeError:
-        raise ParseError(f"SKILL.md in {skill_dir.name} is not valid UTF-8")
+        raise ParseError(f"SKILL.md in {safe_name(skill_dir.name)} is not valid UTF-8")
     except RuntimeError:
         raise ParseError(
-            f"Failed to read SKILL.md in {skill_dir.name}: Symlink loop or unresolvable path"
+            f"Failed to read SKILL.md in {safe_name(skill_dir.name)}: Symlink loop or unresolvable path"
         )
 
     metadata, _ = parse_frontmatter(content)
@@ -173,32 +205,13 @@ def read_properties(skill_dir: Path) -> SkillProperties:
             f"Field 'description' exceeds {MAX_DESCRIPTION_LENGTH} character limit"
         )
 
+    _check_string_length(metadata, "license", MAX_LICENSE_LENGTH)
+    _check_string_length(metadata, "compatibility", MAX_COMPATIBILITY_LENGTH)
+    _check_string_length(metadata, "allowed-tools", MAX_ALLOWED_TOOLS_LENGTH)
+
     license_val = metadata.get("license")
-    if license_val is not None:
-        if not isinstance(license_val, str):
-            raise ValidationError("Field 'license' must be a string")
-        if len(license_val) > MAX_LICENSE_LENGTH:
-            raise ValidationError(
-                f"Field 'license' exceeds {MAX_LICENSE_LENGTH} character limit"
-            )
-
     comp_val = metadata.get("compatibility")
-    if comp_val is not None:
-        if not isinstance(comp_val, str):
-            raise ValidationError("Field 'compatibility' must be a string")
-        if len(comp_val) > MAX_COMPATIBILITY_LENGTH:
-            raise ValidationError(
-                f"Field 'compatibility' exceeds {MAX_COMPATIBILITY_LENGTH} character limit"
-            )
-
     tools_val = metadata.get("allowed-tools")
-    if tools_val is not None:
-        if not isinstance(tools_val, str):
-            raise ValidationError("Field 'allowed-tools' must be a string")
-        if len(tools_val) > MAX_ALLOWED_TOOLS_LENGTH:
-            raise ValidationError(
-                f"Field 'allowed-tools' exceeds {MAX_ALLOWED_TOOLS_LENGTH} character limit"
-            )
 
     custom_metadata = metadata.get("metadata")
     if custom_metadata is not None:

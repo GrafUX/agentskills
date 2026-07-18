@@ -1,7 +1,11 @@
 """Tests for prompt module."""
 
 import sys
+from pathlib import Path
+
 import pytest
+from skills_ref.constants import MAX_SKILLS_PER_PROMPT
+from skills_ref.errors import SkillError
 from skills_ref.prompt import to_prompt
 
 
@@ -72,65 +76,6 @@ Body
     assert "<bar>" not in result
 
 
-def test_deduplication(tmp_path):
-    """Duplicate skill directories are de-duplicated."""
-    skill_dir = tmp_path / "dedup-skill"
-    skill_dir.mkdir()
-    (skill_dir / "SKILL.md").write_text("""---
-name: dedup-skill
-description: A test skill
----
-Body
-""")
-    # Same directory provided twice
-    paths = [skill_dir, skill_dir]
-
-    result = to_prompt(paths)
-    assert result.count("<skill>") == 1
-
-
-def test_max_skills_limit(tmp_path, monkeypatch):
-    """Providing too many skills raises SkillError."""
-    from skills_ref.constants import MAX_SKILLS_PER_PROMPT
-    from skills_ref.errors import SkillError
-
-    # We don't actually need to create many directories, we can mock the input
-    # or just use many copies of the same if we didn't have dedup,
-    # but we DO have dedup, so we need unique paths.
-    skill_dirs = []
-    for i in range(MAX_SKILLS_PER_PROMPT + 1):
-        d = tmp_path / f"skill-{i}"
-        d.mkdir()
-        (d / "SKILL.md").write_text(f"---\nname: skill-{i}\ndescription: desc\n---\n")
-        skill_dirs.append(d)
-
-    with pytest.raises(SkillError) as excinfo:
-        to_prompt(skill_dirs)
-    assert f"exceeds maximum limit of {MAX_SKILLS_PER_PROMPT}" in str(excinfo.value)
-
-
-def test_max_skill_directory_inputs_limit(tmp_path):
-    """Providing too many skill directory inputs raises SkillError before resolve."""
-    from skills_ref.constants import MAX_SKILLS_PER_PROMPT
-    from skills_ref.errors import SkillError
-
-    skill_dir = tmp_path / "repeated-skill"
-    skill_dir.mkdir()
-    (skill_dir / "SKILL.md").write_text("""---
-name: repeated-skill
-description: A test skill
----
-Body
-""")
-
-    with pytest.raises(SkillError) as excinfo:
-        to_prompt([skill_dir] * (MAX_SKILLS_PER_PROMPT + 1))
-    assert (
-        f"Number of skill directories exceeds maximum limit of {MAX_SKILLS_PER_PROMPT}"
-        in str(excinfo.value)
-    )
-
-
 @pytest.mark.skipif(
     sys.platform == "win32", reason="Windows does not support < or > in paths"
 )
@@ -151,8 +96,8 @@ Body
     assert "special-location-&-<>" not in result
 
 
-def test_duplicate_skills_deduplicated(tmp_path):
-    """Duplicate skill directories are only included once in the prompt."""
+def test_deduplicate_skills(tmp_path):
+    """Duplicate skill directories are only included once."""
     skill_dir = tmp_path / "my-skill"
     skill_dir.mkdir()
     (skill_dir / "SKILL.md").write_text("""---
@@ -162,8 +107,9 @@ description: A test skill
 Body
 """)
     # Pass the same skill directory twice (direct path and relative path that resolves to same)
-    result = to_prompt([skill_dir, skill_dir])
+    result = to_prompt([skill_dir, skill_dir, skill_dir])
     assert result.count("<skill>") == 1
+    assert result.count("</skill>") == 1
 
     import os
 
@@ -172,18 +118,15 @@ Body
     assert result.count("<skill>") == 1
 
 
-def test_too_many_skills_raises_error(tmp_path):
-    """Exceeding MAX_SKILLS_PER_PROMPT raises a SkillError."""
-    from skills_ref.constants import MAX_SKILLS_PER_PROMPT
-    from skills_ref.errors import SkillError
-
+def test_max_skills_limit(tmp_path):
+    """Providing too many skills raises SkillError."""
     skill_dirs = []
     for i in range(MAX_SKILLS_PER_PROMPT + 1):
         d = tmp_path / f"skill-{i}"
         d.mkdir()
         (d / "SKILL.md").write_text(f"""---
 name: skill-{i}
-description: desc {i}
+description: Skill {i}
 ---
 Body
 """)
@@ -195,3 +138,48 @@ Body
         f"Number of skill directories exceeds maximum limit of {MAX_SKILLS_PER_PROMPT}"
         in str(excinfo.value)
     )
+
+
+def test_max_skill_directory_inputs_limit(tmp_path):
+    """Providing too many duplicate inputs raises SkillError before resolve."""
+    skill_dir = tmp_path / "repeated-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("""---
+name: repeated-skill
+description: A test skill
+---
+Body
+""")
+
+    with pytest.raises(SkillError) as excinfo:
+        to_prompt([skill_dir] * (MAX_SKILLS_PER_PROMPT + 1))
+    assert (
+        f"Number of skill directories exceeds maximum limit of {MAX_SKILLS_PER_PROMPT}"
+        in str(excinfo.value)
+    )
+
+
+def test_duplicate_paths_resolved_once(tmp_path, monkeypatch):
+    """Exact duplicate paths only trigger one resolve call."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+---
+Body
+""")
+
+    resolve_calls = 0
+    original_resolve = Path.resolve
+
+    def counting_resolve(self):
+        nonlocal resolve_calls
+        resolve_calls += 1
+        return original_resolve(self)
+
+    monkeypatch.setattr(Path, "resolve", counting_resolve)
+
+    to_prompt([skill_dir, skill_dir, skill_dir])
+
+    assert resolve_calls == 1

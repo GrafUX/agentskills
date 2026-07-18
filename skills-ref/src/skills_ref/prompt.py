@@ -41,17 +41,18 @@ def to_prompt(skill_dirs: list[Path]) -> str:
 
     lines = ["<available_skills>"]
     seen = set()
+    resolved_cache = {}
 
     for d in skill_dirs:
+        path = Path(d)
         try:
-            skill_dir = Path(d).resolve()
+            skill_dir = resolved_cache.get(path)
+            if skill_dir is None:
+                skill_dir = path.resolve()
+                resolved_cache[path] = skill_dir
+
             if skill_dir in seen:
                 continue
-
-            if len(seen) >= MAX_SKILLS_PER_PROMPT:
-                raise SkillError(
-                    f"Number of skills exceeds maximum limit of {MAX_SKILLS_PER_PROMPT}"
-                )
 
             props = read_properties(skill_dir)
             seen.add(skill_dir)
@@ -75,7 +76,7 @@ def to_prompt(skill_dirs: list[Path]) -> str:
             if not error_msg:
                 error_msg = "Symlink loop or unresolvable path"
             raise SkillError(
-                f"Failed to process skill directory {Path(d).name}: {error_msg}"
+                f"Failed to process skill directory {path.name}: {error_msg}"
             )
 
     lines.append("</available_skills>")

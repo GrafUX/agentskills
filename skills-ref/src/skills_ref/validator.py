@@ -14,7 +14,7 @@ from .constants import (
     MAX_SKILL_NAME_LENGTH,
 )
 from .errors import ParseError
-from .parser import find_skill_md, parse_frontmatter
+from .parser import find_skill_md, parse_frontmatter, _safe_name
 
 # Allowed frontmatter fields per Agent Skills Spec
 ALLOWED_FIELDS = {
@@ -67,7 +67,7 @@ def _validate_name(name: str, skill_dir: Path) -> list[str]:
         dir_name = unicodedata.normalize("NFKC", skill_dir.name)
         if dir_name != name:
             errors.append(
-                f"Directory name '{skill_dir.name}' must match skill name '{display_name}'"
+                f"Directory name '{_safe_name(skill_dir.name)}' must match skill name '{display_name}'"
             )
 
     return errors
@@ -241,11 +241,13 @@ def validate(skill_dir: Path) -> list[str]:
     skill_dir = Path(skill_dir)
 
     try:
+        safe_dir_name = _safe_name(skill_dir.name)
+
         if not skill_dir.exists():
-            return [f"Path does not exist: {skill_dir.name}"]
+            return [f"Path does not exist: {safe_dir_name}"]
 
         if not skill_dir.is_dir():
-            return [f"Not a directory: {skill_dir.name}"]
+            return [f"Not a directory: {safe_dir_name}"]
 
         skill_md = find_skill_md(skill_dir)
         if skill_md is None:
@@ -254,17 +256,17 @@ def validate(skill_dir: Path) -> list[str]:
         with open(skill_md, "r", encoding="utf-8") as f:
             content = f.read(1024 * 1024 + 1)
             if len(content) > 1024 * 1024:
-                return [f"SKILL.md in {skill_dir.name} exceeds 1MB size limit"]
+                return [f"SKILL.md in {safe_dir_name} exceeds 1MB size limit"]
         metadata, _ = parse_frontmatter(content)
     except OSError as e:
-        return [f"Failed to read SKILL.md in {skill_dir.name}: {e.strerror}"]
+        return [f"Failed to read SKILL.md in {safe_dir_name}: {e.strerror}"]
     except UnicodeDecodeError:
-        return [f"SKILL.md in {skill_dir.name} is not valid UTF-8"]
+        return [f"SKILL.md in {safe_dir_name} is not valid UTF-8"]
     except ParseError as e:
         return [str(e)]
     except RuntimeError:
         return [
-            f"Failed to read SKILL.md in {skill_dir.name}: Symlink loop or unresolvable path"
+            f"Failed to read SKILL.md in {safe_dir_name}: Symlink loop or unresolvable path"
         ]
 
     return validate_metadata(metadata, skill_dir)

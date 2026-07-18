@@ -72,3 +72,8 @@
 **Vulnerability:** The `to_prompt` function accepted an unbounded list of skill directories and processed each one, including potential duplicates or symlinks to the same directory. This could lead to Resource Exhaustion (Prompt Inflation) by exceeding the LLM context window or consuming excessive CPU/IO.
 **Learning:** When processing collections of external inputs that are used to build a larger payload, both the total number of supplied items and the number of unique resolved items must be bounded.
 **Prevention:** Reject oversized input lists before resolving every path, use `Path.resolve()` to canonicalize and de-duplicate directories, and enforce a strict maximum unique-skill count (`MAX_SKILLS_PER_PROMPT`) during prompt generation.
+
+## 2025-07-23 - [Log Manipulation and ANSI Injection via Raw Path Reflection]
+**Vulnerability:** When generating error/exception messages or logging paths, raw directory/file name strings were interpolated directly without sanitization. An attacker supplying a maliciously named folder containing ANSI escape sequences or control codes could manipulate console output, pollute logs, or trigger local terminal behavior.
+**Learning:** Any file system component name (such as directory or file names) provided by users or external repositories must be treated as untrusted and potentially malicious if reflected back in output.
+**Prevention:** Sanitize all untrusted inputs reflected in error messages or logs by stripping ANSI escape sequences and non-printable control characters. Truncate reflected path or directory names to a fixed length (e.g., 64 characters) to mitigate Denial of Service (DoS) from log bloat.

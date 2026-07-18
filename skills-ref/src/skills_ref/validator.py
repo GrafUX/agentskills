@@ -14,7 +14,7 @@ from .constants import (
     MAX_SKILL_NAME_LENGTH,
 )
 from .errors import ParseError
-from .parser import find_skill_md, parse_frontmatter, _safe_name
+from .parser import find_skill_md, parse_frontmatter, _safe_name, _sanitize_error_text
 
 # Allowed frontmatter fields per Agent Skills Spec
 ALLOWED_FIELDS = {
@@ -175,9 +175,17 @@ def _validate_metadata_fields(metadata: dict) -> list[str]:
     """Validate that only allowed fields are present."""
     errors = []
 
-    extra_fields = sorted(set(metadata.keys()) - ALLOWED_FIELDS)
+    if not isinstance(metadata, dict):
+        errors.append("Metadata must be a dictionary")
+        return errors
+
+    # Safe cast all keys to strings to prevent TypeError during set operations, sorting, and join
+    string_keys = {str(k) for k in metadata.keys()}
+    extra_fields = sorted(string_keys - ALLOWED_FIELDS)
     if extra_fields:
-        display_extra = ", ".join(extra_fields)
+        # Sanitize each extra field name to strip ANSI escapes and non-printable control characters
+        sanitized_extra = [_sanitize_error_text(field) for field in extra_fields]
+        display_extra = ", ".join(sanitized_extra)
         if len(display_extra) > 500:
             display_extra = display_extra[:500] + "..."
         errors.append(
@@ -201,6 +209,9 @@ def validate_metadata(metadata: dict, skill_dir: Optional[Path] = None) -> list[
     Returns:
         List of validation error messages. Empty list means valid.
     """
+    if not isinstance(metadata, dict):
+        return ["Metadata must be a dictionary"]
+
     errors = []
     errors.extend(_validate_metadata_fields(metadata))
 

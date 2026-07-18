@@ -416,3 +416,42 @@ Body
 """)
     errors = validate(skill_dir)
     assert any(f"exceeds {MAX_METADATA_KEYS_COUNT} keys limit" in e for e in errors)
+
+
+def test_validator_unsanitized_frontmatter_reflection_security():
+    """Test that ANSI escape sequences and control characters are completely stripped in unexpected frontmatter field reflections."""
+    from skills_ref.validator import validate_metadata
+
+    metadata = {
+        "name": "my-skill",
+        "description": "A test skill",
+        "\x1b[31mbad_ansi_field\x1b[0m": "value",
+        "bad_control\x00field": "value",
+    }
+    errors = validate_metadata(metadata)
+    assert len(errors) == 1
+    err_msg = errors[0]
+    assert "Unexpected fields in frontmatter" in err_msg
+    # Ensure raw control characters and ANSI sequences are stripped from the reflected field names
+    assert "\x1b" not in err_msg
+    assert "bad_ansi_field" in err_msg
+    assert "\x00" not in err_msg
+    assert "bad_controlfield" in err_msg
+
+
+def test_validator_unexpected_fields_non_string_keys():
+    """Test that passing non-string keys in frontmatter does not cause a TypeError in validate_metadata."""
+    from skills_ref.validator import validate_metadata
+
+    metadata = {
+        "name": "my-skill",
+        "description": "A test skill",
+        123: "integer key",
+        None: "none key",
+    }
+    errors = validate_metadata(metadata)
+    assert len(errors) == 1
+    err_msg = errors[0]
+    assert "Unexpected fields in frontmatter" in err_msg
+    assert "123" in err_msg
+    assert "None" in err_msg

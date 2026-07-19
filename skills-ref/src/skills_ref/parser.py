@@ -156,22 +156,24 @@ def read_properties(skill_dir: Path) -> SkillProperties:
     try:
         skill_md = find_skill_md(skill_dir)
 
-        safe_dir_name = _safe_name(skill_dir.name)
-
         if skill_md is None:
-            raise ParseError(f"SKILL.md not found in {safe_dir_name}")
+            raise ParseError(f"SKILL.md not found in {_safe_name(skill_dir.name)}")
 
         with open(skill_md, "r", encoding="utf-8") as f:
             content = f.read(1024 * 1024 + 1)
             if len(content) > 1024 * 1024:
-                raise ParseError(f"SKILL.md in {safe_dir_name} exceeds 1MB size limit")
+                raise ParseError(
+                    f"SKILL.md in {_safe_name(skill_dir.name)} exceeds 1MB size limit"
+                )
     except OSError as e:
-        raise ParseError(f"Failed to read SKILL.md in {safe_dir_name}: {e.strerror}")
+        raise ParseError(
+            f"Failed to read SKILL.md in {_safe_name(skill_dir.name)}: {e.strerror}"
+        )
     except UnicodeDecodeError:
-        raise ParseError(f"SKILL.md in {safe_dir_name} is not valid UTF-8")
+        raise ParseError(f"SKILL.md in {_safe_name(skill_dir.name)} is not valid UTF-8")
     except RuntimeError:
         raise ParseError(
-            f"Failed to read SKILL.md in {safe_dir_name}: Symlink loop or unresolvable path"
+            f"Failed to read SKILL.md in {_safe_name(skill_dir.name)}: Symlink loop or unresolvable path"
         )
 
     metadata, _ = parse_frontmatter(content)

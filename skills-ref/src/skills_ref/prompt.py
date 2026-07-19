@@ -5,7 +5,7 @@ from pathlib import Path
 
 from .constants import MAX_SKILLS_PER_PROMPT
 from .errors import SkillError
-from .parser import find_skill_md, read_properties, _safe_name
+from .parser import read_properties, _safe_name
 
 
 def to_prompt(skill_dirs: list[Path]) -> str:
@@ -65,9 +65,8 @@ def to_prompt(skill_dirs: list[Path]) -> str:
             lines.append(html.escape(props.description))
             lines.append("</description>")
 
-            skill_md_path = find_skill_md(skill_dir)
             lines.append("<location>")
-            lines.append(html.escape(str(skill_md_path)))
+            lines.append(html.escape(str(props.skill_md_path)))
             lines.append("</location>")
 
             lines.append("</skill>")

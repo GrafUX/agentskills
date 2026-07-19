@@ -416,3 +416,23 @@ Body
 """)
     errors = validate(skill_dir)
     assert any(f"exceeds {MAX_METADATA_KEYS_COUNT} keys limit" in e for e in errors)
+
+
+def test_validate_metadata_not_dict():
+    """Validating non-dict metadata should fail gracefully instead of crashing."""
+    from skills_ref.validator import validate_metadata
+
+    errors = validate_metadata("not a dictionary")
+    assert len(errors) == 1
+    assert "frontmatter must be a YAML mapping" in errors[0]
+
+
+def test_validate_metadata_mixed_key_types():
+    """Validating metadata with mixed string and integer keys shouldn't crash."""
+    from skills_ref.validator import validate_metadata
+
+    metadata = {"name": "my-skill", "description": "test", 123: "unexpected"}
+
+    errors = validate_metadata(metadata)
+    assert any("Unexpected fields in frontmatter" in e for e in errors)
+    assert any("123" in e for e in errors)

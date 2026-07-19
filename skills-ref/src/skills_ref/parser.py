@@ -67,6 +67,42 @@ def find_skill_md(skill_dir: Path) -> Optional[Path]:
     return None
 
 
+def _validate_frontmatter_limits(metadata: dict) -> None:
+    """Validate limits on YAML frontmatter metadata mapping.
+
+    Args:
+        metadata: Parsed YAML metadata dictionary
+
+    Raises:
+        ParseError: If any metadata field or value exceeds limits
+    """
+    if len(metadata) > MAX_FRONTMATTER_FIELDS_COUNT:
+        raise ParseError(
+            f"Frontmatter exceeds {MAX_FRONTMATTER_FIELDS_COUNT} fields limit"
+        )
+
+    for key, value in metadata.items():
+        if not isinstance(key, str):
+            raise ParseError("Frontmatter keys must be strings")
+
+        display_key = key if len(key) <= 100 else key[:100] + "..."
+        if len(key) > MAX_METADATA_KEY_LENGTH:
+            raise ParseError(
+                f"Frontmatter key '{display_key}' exceeds {MAX_METADATA_KEY_LENGTH} character limit"
+            )
+        if isinstance(value, str) and len(value) > MAX_FRONTMATTER_VALUE_LENGTH:
+            raise ParseError(
+                f"Frontmatter value for '{display_key}' exceeds {MAX_FRONTMATTER_VALUE_LENGTH} character limit"
+            )
+
+    if "metadata" in metadata and isinstance(metadata["metadata"], dict):
+        if len(metadata["metadata"]) > MAX_METADATA_KEYS_COUNT:
+            raise ParseError(
+                f"Field 'metadata' exceeds {MAX_METADATA_KEYS_COUNT} keys limit"
+            )
+        metadata["metadata"] = {str(k): str(v) for k, v in metadata["metadata"].items()}
+
+
 def parse_frontmatter(content: str) -> tuple[dict, str]:
     """Parse YAML frontmatter from SKILL.md content.
 
@@ -106,31 +142,7 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
     if not isinstance(metadata, dict):
         raise ParseError("SKILL.md frontmatter must be a YAML mapping")
 
-    if len(metadata) > MAX_FRONTMATTER_FIELDS_COUNT:
-        raise ParseError(
-            f"Frontmatter exceeds {MAX_FRONTMATTER_FIELDS_COUNT} fields limit"
-        )
-
-    for key, value in metadata.items():
-        if not isinstance(key, str):
-            raise ParseError("Frontmatter keys must be strings")
-
-        display_key = key if len(key) <= 100 else key[:100] + "..."
-        if len(key) > MAX_METADATA_KEY_LENGTH:
-            raise ParseError(
-                f"Frontmatter key '{display_key}' exceeds {MAX_METADATA_KEY_LENGTH} character limit"
-            )
-        if isinstance(value, str) and len(value) > MAX_FRONTMATTER_VALUE_LENGTH:
-            raise ParseError(
-                f"Frontmatter value for '{display_key}' exceeds {MAX_FRONTMATTER_VALUE_LENGTH} character limit"
-            )
-
-    if "metadata" in metadata and isinstance(metadata["metadata"], dict):
-        if len(metadata["metadata"]) > MAX_METADATA_KEYS_COUNT:
-            raise ParseError(
-                f"Field 'metadata' exceeds {MAX_METADATA_KEYS_COUNT} keys limit"
-            )
-        metadata["metadata"] = {str(k): str(v) for k, v in metadata["metadata"].items()}
+    _validate_frontmatter_limits(metadata)
 
     return metadata, body
 

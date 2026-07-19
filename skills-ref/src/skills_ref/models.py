@@ -1,6 +1,7 @@
 """Data models for Agent Skills."""
 
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Optional
 
 
@@ -24,6 +25,7 @@ class SkillProperties:
     compatibility: Optional[str] = None
     allowed_tools: Optional[str] = None
     metadata: dict[str, str] = field(default_factory=dict)
+    skill_md_path: Optional[Path] = None
 
     def to_dict(self) -> dict:
         """Convert to dictionary, excluding None values."""

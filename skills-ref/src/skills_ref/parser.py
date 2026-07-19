@@ -250,4 +250,5 @@ def read_properties(skill_dir: Path) -> SkillProperties:
         compatibility=comp_val,
         allowed_tools=tools_val,
         metadata=custom_metadata,
+        skill_md_path=skill_md,
     )

@@ -77,3 +77,8 @@
 **Vulnerability:** When generating error/exception messages or logging paths, raw directory/file name strings were interpolated directly without sanitization. An attacker supplying a maliciously named folder containing ANSI escape sequences or control codes could manipulate console output, pollute logs, or trigger local terminal behavior.
 **Learning:** Any file system component name (such as directory or file names) provided by users or external repositories must be treated as untrusted and potentially malicious if reflected back in output.
 **Prevention:** Sanitize all untrusted inputs reflected in error messages or logs by stripping ANSI escape sequences and non-printable control characters. Truncate reflected path or directory names to a fixed length (e.g., 64 characters) to mitigate Denial of Service (DoS) from log bloat.
+
+## 2026-07-18 - [Terminal Injection and Log Manipulation via Unsanitized Parser Error Messages]
+**Vulnerability:** Unsanitized `strictyaml.YAMLError` exception messages were reflected back to the user via `ParseError` when parsing YAML frontmatter. This could contain untrusted YAML text (e.g., ANSI escape codes or non-printable control characters) supplied by attackers in malicious `SKILL.md` files, resulting in terminal injection, log manipulation, or unexpected console behavior.
+**Learning:** Raw exception strings from third-party parsers can act as a reflection vector for untrusted user inputs if they include fragments of the processed file or parsed content.
+**Prevention:** Always filter and sanitize third-party exception messages using sanitization functions like `_sanitize_error_text` before exposing them to the user or logging them.

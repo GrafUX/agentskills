@@ -84,6 +84,22 @@ def test_validator_error_uses_safe_name(tmp_path):
     assert "a" * 64 in error_str
 
 
+def test_parser_yaml_error_is_sanitized():
+    """Test that ParseError resulting from invalid YAML sanitizes the strictyaml exception string."""
+    # Frontmatter string with invalid YAML and a colored/ANSI escaped character & control character
+    invalid_content_with_ansi = "---\nname: Test\n- \x1b[31minvalid\x1b[0m\x00yaml\n---"
+
+    with pytest.raises(ParseError) as exc_info:
+        from skills_ref.parser import parse_frontmatter
+
+        parse_frontmatter(invalid_content_with_ansi)
+
+    error_str = str(exc_info.value)
+    assert "\x1b" not in error_str
+    assert "\x00" not in error_str
+    assert "Invalid YAML in frontmatter:" in error_str
+
+
 def test_prompt_error_uses_safe_name(tmp_path, monkeypatch):
     """Test that prompt exceptions in to_prompt() reflect a sanitized/truncated directory name when resolve fails."""
     long_dir_name = "a" * 100 + "\x1b[31mred\x1b[0m"

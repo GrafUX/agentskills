@@ -58,6 +58,11 @@
 **Learning:** Even if the total file size is limited (e.g., 1MB), the internal structure of parsed data (like YAML mappings) can still cause issues if not explicitly constrained.
 **Prevention:** Implement strict counts and character length limits for all parsed fields at the earliest possible stage, immediately after the raw data is loaded into a structured format.
 
+## 2026-07-10 - [Path Traversal/Arbitrary File Read via SKILL.md Symlinks]
+**Vulnerability:** In `parser.py`, `find_skill_md` searched for `SKILL.md` using `path.is_file()` which returns `True` for symlinks pointing to regular files. An attacker could craft a repository with `SKILL.md` as a symlink pointing to sensitive files (such as `/etc/passwd` or configuration files) outside the skill directory, allowing arbitrary file reading during validation, prompt generation, or property extraction.
+**Learning:** `path.is_file()` resolves symlinks automatically. When verifying file system structure for untrusted external inputs, always ensure that symlinks do not escape their designated parent directory boundaries.
+**Prevention:** Explicitly check if a file is a symlink using `path.is_symlink()`, resolve the symlink's canonical path and the directory's canonical path, and assert that the resolved directory is in the resolved file path's parents.
+
 ## 2025-07-20 - [Prompt Inflation & DoS via Unbounded Metadata]
 **Vulnerability:** In `parser.py`, `read_properties` parsed skill metadata without enforcing length limits. While the `validator.py` utility checked these limits, the code path used for generating LLM prompts (via `read_properties`) did not. An attacker could provide a skill with metadata fields (like `description`) approaching the 1MB file limit, leading to "Prompt Inflation" and exhausting the LLM context window.
 **Learning:** Security bounds must be enforced at the data ingestion point (`read_properties`) to protect all downstream consumers, including those that might skip the full validation utility.

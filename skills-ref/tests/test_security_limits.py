@@ -73,7 +73,10 @@ def test_symlink_path_traversal_protection(tmp_path):
 
     # Create a symlink named SKILL.md inside skill_dir pointing to the secret file outside
     symlink_path = skill_dir / "SKILL.md"
-    symlink_path.symlink_to(secret_file)
+    try:
+        symlink_path.symlink_to(secret_file)
+    except OSError:
+        pytest.skip("Symlinks are not supported or not permitted on this platform")
 
     # find_skill_md should return None because the resolved SKILL.md is outside skill_dir
     assert find_skill_md(skill_dir) is None
@@ -81,3 +84,20 @@ def test_symlink_path_traversal_protection(tmp_path):
     # Consequently, read_properties should raise a ParseError
     with pytest.raises(ParseError, match="SKILL.md not found in"):
         read_properties(skill_dir)
+
+
+def test_skill_md_symlink_inside_dir(tmp_path):
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+
+    real_md = skill_dir / "REAL_SKILL.md"
+    real_md.write_text("---\nname: my-skill\ndescription: test\n---")
+
+    skill_md = skill_dir / "SKILL.md"
+    try:
+        skill_md.symlink_to(real_md)
+    except OSError:
+        pytest.skip("Symlinks are not supported or not permitted on this platform")
+
+    props = read_properties(skill_dir)
+    assert props.name == "my-skill"

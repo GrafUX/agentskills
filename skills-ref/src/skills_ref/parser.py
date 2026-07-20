@@ -63,7 +63,7 @@ def find_skill_md(skill_dir: Path) -> Optional[Path]:
                     resolved_dir = skill_dir.resolve()
                     resolved_path = path.resolve()
                     if resolved_dir not in resolved_path.parents:
-                        continue
+                        return None
                 return path
     except OSError:
         pass

@@ -81,3 +81,8 @@
 **Vulnerability:** Type confusion when parsing YAML metadata leading to TypeError crashes. Also log forging via terminal injection using unprintable ANSI characters in error messages reflecting arbitrary dictionary keys.
 **Learning:** Type-enforcement on incoming metadata dictionary structures was missing in `validate_metadata`. Using set operations on a dictionary containing mixed typing (e.g. integer vs string keys) triggers implicit string operations that crash the application.
 **Prevention:** Explicitly validate types (e.g., `isinstance(metadata, dict)`) and stringify keys (`str(k)`) before performing subset validation or string formatting. Always wrap dynamically-rendered error messages incorporating external input in a sanitization filter (`_sanitize_error_text`).
+
+## 2026-07-24 - [Path Traversal via Symlink File Reference]
+**Vulnerability:** In `parser.py`, `find_skill_md` located files using relative checks (e.g. `skill_dir / "SKILL.md"`). A malicious user could supply a directory with `SKILL.md` as a symlink pointing to arbitrary files outside of the `skill_dir` (e.g., `/etc/passwd`), causing the host application to read and parse unauthorized files.
+**Learning:** Checking `is_file()` handles symlink files but resolves them silently. For untrusted content structures, verifying directory containment of resolved target symlinks is required.
+**Prevention:** Perform containment validation by ensuring that the resolved symlink path resides underneath the resolved target directory (`resolved_dir in resolved_path.parents`).

@@ -59,6 +59,11 @@ def find_skill_md(skill_dir: Path) -> Optional[Path]:
         for name in ("SKILL.md", "skill.md"):
             path = skill_dir / name
             if path.is_file():
+                if path.is_symlink():
+                    resolved_dir = skill_dir.resolve()
+                    resolved_path = path.resolve()
+                    if resolved_dir not in resolved_path.parents:
+                        return None
                 return path
     except OSError:
         pass

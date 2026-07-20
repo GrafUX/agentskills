@@ -14,7 +14,7 @@ from .constants import (
     MAX_SKILL_NAME_LENGTH,
 )
 from .errors import ParseError
-from .parser import find_skill_md, parse_frontmatter, _safe_name
+from .parser import find_skill_md, parse_frontmatter, _safe_name, _sanitize_error_text
 
 # Allowed frontmatter fields per Agent Skills Spec
 ALLOWED_FIELDS = {
@@ -175,10 +175,10 @@ def _validate_metadata_fields(metadata: dict) -> list[str]:
     """Validate that only allowed fields are present."""
     errors = []
 
-    string_keys = {str(k) for k in metadata.keys()}
-    extra_fields = sorted(string_keys - ALLOWED_FIELDS)
+    extra_fields = sorted(set(str(k) for k in metadata.keys()) - ALLOWED_FIELDS)
     if extra_fields:
         display_extra = ", ".join(extra_fields)
+        display_extra = _sanitize_error_text(display_extra)
         if len(display_extra) > 500:
             display_extra = display_extra[:500] + "..."
         errors.append(
@@ -202,10 +202,12 @@ def validate_metadata(metadata: dict, skill_dir: Optional[Path] = None) -> list[
     Returns:
         List of validation error messages. Empty list means valid.
     """
-    if not isinstance(metadata, dict):
-        return ["SKILL.md frontmatter must be a YAML mapping"]
-
     errors = []
+
+    if not isinstance(metadata, dict):
+        errors.append("Metadata must be a dictionary")
+        return errors
+
     errors.extend(_validate_metadata_fields(metadata))
 
     if "name" not in metadata:

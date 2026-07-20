@@ -424,7 +424,7 @@ def test_validate_metadata_not_dict():
 
     errors = validate_metadata("not a dictionary")
     assert len(errors) == 1
-    assert "frontmatter must be a YAML mapping" in errors[0]
+    assert "Metadata must be a dictionary" in errors[0]
 
 
 def test_validate_metadata_mixed_key_types():

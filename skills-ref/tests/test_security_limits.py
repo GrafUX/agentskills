@@ -64,3 +64,42 @@ def test_parse_frontmatter_non_string_key():
     except ParseError as e:
         # If it failed, it should be because it's not a string
         assert "Frontmatter keys must be strings" in str(e)
+
+
+def test_skill_md_symlink_outside_dir(tmp_path):
+    from skills_ref.parser import read_properties
+
+    secret_file = tmp_path / "secret.txt"
+    secret_file.write_text("---\nname: secret-skill\ndescription: secret data\n---")
+
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+
+    skill_md = skill_dir / "SKILL.md"
+    try:
+        skill_md.symlink_to(secret_file)
+    except OSError:
+        pytest.skip("Symlinks are not supported or not permitted on this platform")
+
+    with pytest.raises(ParseError) as exc_info:
+        read_properties(skill_dir)
+    assert "SKILL.md not found in" in str(exc_info.value)
+
+
+def test_skill_md_symlink_inside_dir(tmp_path):
+    from skills_ref.parser import read_properties
+
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+
+    real_md = skill_dir / "REAL_SKILL.md"
+    real_md.write_text("---\nname: my-skill\ndescription: test\n---")
+
+    skill_md = skill_dir / "SKILL.md"
+    try:
+        skill_md.symlink_to(real_md)
+    except OSError:
+        pytest.skip("Symlinks are not supported or not permitted on this platform")
+
+    props = read_properties(skill_dir)
+    assert props.name == "my-skill"

@@ -346,3 +346,77 @@ def test_find_skill_md_handles_runtime_error(monkeypatch):
 
     result = find_skill_md(Path("/some/dummy/path"))
     assert result is None
+
+
+def test_metadata_complex_structure_rejected():
+    """Metadata fields with complex structures (list/dict) should raise ParseError."""
+    content = """---
+name: my-skill
+description: A test skill
+metadata:
+  complex_key:
+    - this
+    - is
+    - a
+    - list
+---
+Body
+"""
+    with pytest.raises(
+        ParseError, match="Metadata values cannot be complex structures"
+    ):
+        parse_frontmatter(content)
+
+
+def test_ansi_escape_codes_stripped_from_error_messages(monkeypatch):
+    """ANSI escape codes in frontmatter keys should be stripped when reflecting in error messages."""
+    # strictyaml has a bug where it throws an AttributeError on ANSI escape codes, so we mock
+    # the parser to bypass it and return parsed data with ANSI escape codes in the key.
+    import skills_ref.parser as parser_module
+
+    class DummyParsed:
+        def __init__(self, data):
+            self.data = data
+
+    key = "k" * 70 + "\x1b[31mred_key\x1b[0m"
+    data = {"name": "my-skill", "description": "desc", key: "a" * 15}
+
+    monkeypatch.setattr(
+        parser_module.strictyaml, "load", lambda *a, **kw: DummyParsed(data)
+    )
+
+    content = "---\nname: my-skill\n---\nbody"
+    with pytest.raises(ParseError) as exc_info:
+        parse_frontmatter(content)
+
+    assert "red_key" in str(exc_info.value)
+    assert "\x1b[31m" not in str(exc_info.value)
+    assert "\x1b[0m" not in str(exc_info.value)
+
+
+def test_yaml_error_is_sanitized(monkeypatch):
+    """YAMLError must be sanitized to strip ANSI escape codes."""
+    import skills_ref.parser as parser_module
+
+    # Create a dummy strictyaml.YAMLError instance
+    class DummyYAMLError(parser_module.strictyaml.YAMLError):
+        def __init__(self, message):
+            self.message = message
+
+        def __str__(self):
+            return self.message
+
+    monkeypatch.setattr(
+        parser_module.strictyaml,
+        "load",
+        lambda *a, **kw: (_ for _ in ()).throw(
+            DummyYAMLError("\x1b[31msecret internal detail\x1b[0m")
+        ),
+    )
+
+    content = "---\nname: my-skill\n---\nbody"
+    with pytest.raises(ParseError) as exc_info:
+        parse_frontmatter(content)
+
+    assert "secret internal detail" in str(exc_info.value)
+    assert "\x1b[31m" not in str(exc_info.value)

@@ -5,6 +5,7 @@ from skills_ref.parser import (
     _safe_name,
     read_properties,
     ParseError,
+    parse_frontmatter,
 )
 from skills_ref.validator import validate
 from skills_ref.prompt import to_prompt
@@ -67,6 +68,80 @@ def test_parser_error_uses_safe_name(tmp_path):
     assert "\x1b" not in error_str
     assert "..." in error_str
     assert "a" * 64 in error_str
+
+
+def test_frontmatter_key_sanitization_in_parse_error(monkeypatch):
+    """Test that ParseError sanitizes/strips ANSI escape sequences from reflected frontmatter keys."""
+
+    class MockParsed:
+        data = {"a" * 65 + "\x1b[31mred\x1b[0m": "value"}
+
+    monkeypatch.setattr("strictyaml.load", lambda x: MockParsed())
+
+    with pytest.raises(ParseError) as exc_info:
+        parse_frontmatter("---\nname: test\n---\nbody")
+
+    error_str = str(exc_info.value)
+    assert "Frontmatter key" in error_str
+    assert "\x1b" not in error_str
+    assert "red" in error_str
+
+
+def test_frontmatter_value_key_sanitization_in_parse_error(monkeypatch):
+    """Test that ParseError sanitizes/strips ANSI escape sequences from key reflected when value exceeds limits."""
+
+    class MockParsed:
+        data = {"key\x1b[31mred\x1b[0m": "v" * 5000}
+
+    monkeypatch.setattr("strictyaml.load", lambda x: MockParsed())
+
+    with pytest.raises(ParseError) as exc_info:
+        parse_frontmatter("---\nname: test\n---\nbody")
+
+    error_str = str(exc_info.value)
+    assert "Frontmatter value for" in error_str
+    assert "\x1b" not in error_str
+    assert "red" in error_str
+
+
+def test_validate_name_sanitization_in_errors():
+    """Test that validation errors sanitize/strip ANSI escape sequences from reflected skill names."""
+    from skills_ref.validator import validate_metadata
+
+    long_name_with_ansi = "a" * 60 + "\x1b[31mred\x1b[0m"
+    metadata = {"name": long_name_with_ansi, "description": "desc"}
+
+    errors = validate_metadata(metadata)
+    assert len(errors) > 0
+    found_error = False
+    for error in errors:
+        if "exceeds" in error or "lowercase" in error:
+            assert "\x1b" not in error
+            assert "red" in error
+            found_error = True
+    assert found_error
+
+
+def test_validate_metadata_dict_key_sanitization_in_errors():
+    """Test that validation errors sanitize/strip ANSI escape sequences from reflected metadata keys."""
+    from skills_ref.validator import validate_metadata
+
+    long_key_with_ansi = "a" * 60 + "\x1b[31mred\x1b[0m"
+    metadata = {
+        "name": "my-skill",
+        "description": "desc",
+        "metadata": {long_key_with_ansi: "value"},
+    }
+
+    errors = validate_metadata(metadata)
+    assert len(errors) > 0
+    found_error = False
+    for error in errors:
+        if "Metadata key" in error and "exceeds" in error:
+            assert "\x1b" not in error
+            assert "red" in error
+            found_error = True
+    assert found_error
 
 
 def test_validator_error_uses_safe_name(tmp_path):

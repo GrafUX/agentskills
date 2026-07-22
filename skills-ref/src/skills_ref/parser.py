@@ -101,7 +101,7 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
         # Catch all exceptions because strictyaml can raise non-YAMLError exceptions
         # on certain invalid inputs (e.g. AttributeError on unprintable characters)
         if isinstance(e, strictyaml.YAMLError):
-            err_msg = str(e)
+            err_msg = _sanitize_error_text(str(e))
             if len(err_msg) > 1000:
                 err_msg = err_msg[:1000] + "..."
             raise ParseError(f"Invalid YAML in frontmatter: {err_msg}")
@@ -122,12 +122,12 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
 
         len_key = len(key)
         if len_key > MAX_METADATA_KEY_LENGTH:
-            display_key = key if len_key <= 100 else key[:100] + "..."
+            display_key = _safe_name(key, max_len=100)
             raise ParseError(
                 f"Frontmatter key '{display_key}' exceeds {MAX_METADATA_KEY_LENGTH} character limit"
             )
         if isinstance(value, str) and len(value) > MAX_FRONTMATTER_VALUE_LENGTH:
-            display_key = key if len_key <= 100 else key[:100] + "..."
+            display_key = _safe_name(key, max_len=100)
             raise ParseError(
                 f"Frontmatter value for '{display_key}' exceeds {MAX_FRONTMATTER_VALUE_LENGTH} character limit"
             )

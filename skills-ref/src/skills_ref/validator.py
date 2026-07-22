@@ -154,16 +154,21 @@ def _validate_metadata_dict(custom_metadata: dict) -> list[str]:
             errors.append("Metadata keys must be strings")
             continue
 
-        display_k = k if len(k) <= 100 else k[:100] + "..."
         if len(k) > MAX_METADATA_KEY_LENGTH:
+            display_k = _sanitize_error_text(k)
+            display_k = display_k if len(display_k) <= 100 else display_k[:100] + "..."
             errors.append(
                 f"Metadata key '{display_k}' exceeds {MAX_METADATA_KEY_LENGTH} character limit"
             )
 
         if not isinstance(v, str):
+            display_k = _sanitize_error_text(k)
+            display_k = display_k if len(display_k) <= 100 else display_k[:100] + "..."
             errors.append(f"Metadata value for '{display_k}' must be a string")
             continue
         if len(v) > MAX_METADATA_VALUE_LENGTH:
+            display_k = _sanitize_error_text(k)
+            display_k = display_k if len(display_k) <= 100 else display_k[:100] + "..."
             errors.append(
                 f"Metadata value for '{display_k}' exceeds {MAX_METADATA_VALUE_LENGTH} character limit"
             )

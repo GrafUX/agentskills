@@ -91,3 +91,7 @@
 **Vulnerability:** In `parser.py`, `find_skill_md` located files using relative checks (e.g. `skill_dir / "SKILL.md"`). A malicious user could supply a directory with `SKILL.md` as a symlink pointing to arbitrary files outside of the `skill_dir` (e.g., `/etc/passwd`), causing the host application to read and parse unauthorized files.
 **Learning:** Checking `is_file()` handles symlink files but resolves them silently. For untrusted content structures, verifying directory containment of resolved target symlinks is required.
 **Prevention:** Perform containment validation by ensuring that the resolved symlink path resides underneath the resolved target directory (`resolved_dir in resolved_path.parents`).
+## 2024-05-24 - Fix Terminal Injection in Error Messages
+**Vulnerability:** Unsanitized variables (like YAML error tracebacks and custom frontmatter keys) were being reflected in terminal outputs when thrown via exceptions like `ParseError` and `ValidationError`. This could lead to ANSI terminal injection or log manipulation.
+**Learning:** Even when strings are truncated to prevent Denial of Service issues, dangerous control characters and ANSI escape sequences can still cause security problems when reflected back to logs or terminal interfaces.
+**Prevention:** Always lazily sanitize input using methods like `_sanitize_error_text` or `_safe_name` immediately before appending to an error string, especially for data structures obtained from untrusted input like YAML.

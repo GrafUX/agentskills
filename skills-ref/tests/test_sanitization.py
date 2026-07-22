@@ -5,8 +5,9 @@ from skills_ref.parser import (
     _safe_name,
     read_properties,
     ParseError,
+    parse_frontmatter,
 )
-from skills_ref.validator import validate
+from skills_ref.validator import validate, validate_metadata
 from skills_ref.prompt import to_prompt
 from skills_ref.errors import SkillError
 
@@ -67,6 +68,57 @@ def test_parser_error_uses_safe_name(tmp_path):
     assert "\x1b" not in error_str
     assert "..." in error_str
     assert "a" * 64 in error_str
+
+
+def test_parse_frontmatter_key_too_long_ansi(monkeypatch):
+    """Test that ParseError in parse_frontmatter sanitizes frontmatter key with ANSI sequence."""
+    long_key_with_ansi = "\x1b[31mred\x1b[0m" + "x" * 110
+
+    class MockParsed:
+        data = {long_key_with_ansi: "value"}
+
+    monkeypatch.setattr("strictyaml.load", lambda *args, **kwargs: MockParsed())
+
+    with pytest.raises(ParseError) as exc_info:
+        parse_frontmatter("---\nfoo: bar\n---\nbody")
+
+    error_str = str(exc_info.value)
+    assert "Frontmatter key '" in error_str
+    assert "\x1b" not in error_str
+    assert "..." in error_str
+    assert "red" in error_str
+
+
+def test_validate_name_ansi_sanitized():
+    """Test that validate_metadata sanitizes invalid skill name with ANSI sequences."""
+    metadata = {
+        "name": "Invalid-Name\x1b[31mred\x1b[0m",
+        "description": "test description",
+    }
+    errors = validate_metadata(metadata)
+    assert len(errors) > 0
+    # Any error message referencing the name should have the ANSI sequence stripped
+    for err in errors:
+        assert "\x1b" not in err
+        assert "red" in err
+
+
+def test_validate_metadata_key_ansi_sanitized():
+    """Test that validate_metadata sanitizes custom metadata keys with ANSI sequences."""
+    long_key_with_ansi = "\x1b[31mred\x1b[0m" + "x" * 110
+    metadata = {
+        "name": "valid-name",
+        "description": "test description",
+        "metadata": {long_key_with_ansi: "value"},
+    }
+    errors = validate_metadata(metadata)
+    assert len(errors) > 0
+    # Any error message referencing the metadata key should have the ANSI sequence stripped
+    for err in errors:
+        if "Metadata key" in err:
+            assert "\x1b" not in err
+            assert "red" in err
+            assert "..." in err
 
 
 def test_validator_error_uses_safe_name(tmp_path):

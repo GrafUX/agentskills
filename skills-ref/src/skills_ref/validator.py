@@ -41,7 +41,12 @@ def _validate_name(name: str, skill_dir: Path) -> list[str]:
 
     name = unicodedata.normalize("NFKC", name.strip())
 
-    display_name = _safe_name(name, max_len=100)
+    display_name = (
+        _safe_name(name, max_len=100)
+        .replace("\n", " ")
+        .replace("\r", " ")
+        .replace("\t", " ")
+    )
     if len(name) > MAX_SKILL_NAME_LENGTH:
         errors.append(
             f"Skill name '{display_name}' exceeds {MAX_SKILL_NAME_LENGTH} character limit "

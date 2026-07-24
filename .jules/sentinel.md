@@ -92,7 +92,7 @@
 **Learning:** Checking `is_file()` handles symlink files but resolves them silently. For untrusted content structures, verifying directory containment of resolved target symlinks is required.
 **Prevention:** Perform containment validation by ensuring that the resolved symlink path resides underneath the resolved target directory (`resolved_dir in resolved_path.parents`).
 
-## 2025-07-25 - [Terminal Injection & Log Manipulation via Exception Messages]
+## 2026-07-24 - [Terminal Injection & Log Manipulation via Exception Messages]
 **Vulnerability:** In `parser.py`, the stringified exception message `str(e)` from `strictyaml.YAMLError` was directly truncated and embedded in a `ParseError` without sanitization. An attacker could provide a malicious SKILL.md file containing ANSI escape sequences or control characters that trigger a parsing error. When the application or CLI tool catches and displays the error, the unsanitized output is printed to the terminal or saved in logs, leading to Terminal Injection or Log Manipulation.
 **Learning:** Any exception message that incorporates untrusted user input, directly or indirectly through a third-party library, poses an injection risk if reflected in logs or terminal output. Libraries do not always sanitize error messages before raising exceptions.
 **Prevention:** Always explicitly sanitize stringified third-party exception messages (e.g., `_sanitize_error_text(str(e))`) before reflecting them back to users or logs to strip ANSI escape codes and dangerous control characters.

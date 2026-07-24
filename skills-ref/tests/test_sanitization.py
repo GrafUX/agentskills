@@ -1,15 +1,17 @@
-import pytest
 from pathlib import Path
-from skills_ref.parser import (
-    _sanitize_error_text,
-    _safe_name,
-    read_properties,
-    ParseError,
-    parse_frontmatter,
-)
-from skills_ref.validator import validate, validate_metadata
-from skills_ref.prompt import to_prompt
+
+import pytest
+
 from skills_ref.errors import SkillError
+from skills_ref.parser import (
+    ParseError,
+    _safe_name,
+    _sanitize_error_text,
+    parse_frontmatter,
+    read_properties,
+)
+from skills_ref.prompt import to_prompt
+from skills_ref.validator import validate, validate_metadata
 
 
 def test_sanitize_error_text_ansi_escape():
@@ -24,6 +26,13 @@ def test_sanitize_error_text_control_characters():
     text_with_control = "Line 1\nLine 2\r\t\x00\x08secret"
     sanitized = _sanitize_error_text(text_with_control)
     assert "Line 1\nLine 2\r\tsecret" == sanitized
+
+
+def test_sanitize_error_text_removes_del_and_c1_controls():
+    """Test that DEL and C1 control characters are removed."""
+    text_with_controls = "prefix\x7fmiddle\x9b[31msuffix"
+    sanitized = _sanitize_error_text(text_with_controls)
+    assert sanitized == "prefixmiddle[31msuffix"
 
 
 def test_safe_name_truncation():
@@ -70,12 +79,25 @@ def test_parser_error_uses_safe_name(tmp_path):
     assert "a" * 64 in error_str
 
 
+def test_parse_frontmatter_invalid_yaml_ansi():
+    """Test that ParseError in parse_frontmatter sanitizes invalid YAML error messages containing ANSI sequences."""
+    content = "---\nname: \x1b[31minvalid\x1b[0m\n---\nbody"
+    with pytest.raises(ParseError) as exc_info:
+        parse_frontmatter(content)
+
+    error_str = str(exc_info.value)
+    assert "Invalid YAML in frontmatter:" in error_str
+    assert "\x1b" not in error_str
+    assert "[31m" not in error_str
+
+
 def test_parse_frontmatter_key_too_long_ansi(monkeypatch):
     """Test that ParseError in parse_frontmatter sanitizes frontmatter key with ANSI sequence."""
     long_key_with_ansi = "\x1b[31mred\x1b[0m" + "x" * 110
 
     class MockParsed:
-        data = {long_key_with_ansi: "value"}
+        def __init__(self):
+            self.data = {long_key_with_ansi: "value"}
 
     monkeypatch.setattr("strictyaml.load", lambda *args, **kwargs: MockParsed())
 

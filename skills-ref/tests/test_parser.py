@@ -155,6 +155,31 @@ def test_find_skill_md_returns_none_when_missing(tmp_path):
     assert result is None
 
 
+def test_find_skill_md_not_a_directory(tmp_path):
+    """find_skill_md should return None if skill_dir is a file or doesn't exist."""
+    file_path = tmp_path / "not_a_dir"
+    file_path.write_text("just a file")
+    assert find_skill_md(file_path) is None
+    assert find_skill_md(tmp_path / "nonexistent_dir") is None
+
+
+def test_find_skill_md_symlink_escape(tmp_path):
+    """find_skill_md should return None if the skill file is a symlink escaping the directory."""
+    skill_dir = tmp_path / "skill"
+    skill_dir.mkdir()
+
+    # Create an external file
+    external_file = tmp_path / "secret.md"
+    external_file.write_text("secret data")
+
+    # Symlink SKILL.md in the skill directory to the external file
+    skill_md = skill_dir / "SKILL.md"
+    skill_md.symlink_to(external_file)
+
+    # Since SKILL.md resolves to external_file, which is outside skill_dir, find_skill_md should return None
+    assert find_skill_md(skill_dir) is None
+
+
 def test_read_properties_with_lowercase_skill_md(tmp_path):
     """read_properties should work with lowercase skill.md."""
     skill_dir = tmp_path / "my-skill"

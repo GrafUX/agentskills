@@ -160,7 +160,7 @@ Body
 
 
 def test_duplicate_paths_resolved_once(tmp_path, monkeypatch):
-    """Exact duplicate paths only trigger one resolve call."""
+    """Exact duplicate paths only trigger one resolve call in prompt.py caching, plus internal find_skill_md resolve."""
     skill_dir = tmp_path / "my-skill"
     skill_dir.mkdir()
     (skill_dir / "SKILL.md").write_text("""---
@@ -182,4 +182,5 @@ Body
 
     to_prompt([skill_dir, skill_dir, skill_dir])
 
-    assert resolve_calls == 1
+    # 1 call from to_prompt, plus 2 calls internally in find_skill_md due to unconditional containment check
+    assert resolve_calls == 3

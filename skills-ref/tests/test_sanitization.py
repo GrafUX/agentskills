@@ -35,6 +35,13 @@ def test_sanitize_error_text_removes_del_and_c1_controls():
     assert sanitized == "prefixmiddle[31msuffix"
 
 
+def test_safe_name_replaces_newlines_and_tabs():
+    """Test that safe_name replaces newlines, carriage returns, and tabs with spaces."""
+    name_with_whitespaces = "my\nname\rwith\ttabs"
+    safe = _safe_name(name_with_whitespaces)
+    assert safe == "my name with tabs"
+
+
 def test_safe_name_truncation():
     """Test that safe_name truncates strings longer than max_len."""
     long_name = "a" * 100

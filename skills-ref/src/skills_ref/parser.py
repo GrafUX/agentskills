@@ -38,6 +38,8 @@ def _safe_name(name: str, max_len: int = 64) -> str:
     if not name:
         return ""
     sanitized = _sanitize_error_text(name).strip()
+    # Replace newline, carriage return, and tab characters with spaces to prevent log/terminal injection
+    sanitized = sanitized.replace("\n", " ").replace("\r", " ").replace("\t", " ")
     if len(sanitized) > max_len:
         return sanitized[:max_len] + "..."
     return sanitized
@@ -55,14 +57,15 @@ def find_skill_md(skill_dir: Path) -> Path | None:
         Path to the SKILL.md file, or None if not found
     """
     try:
+        if not skill_dir.is_dir():
+            return None
         for name in ("SKILL.md", "skill.md"):
             path = skill_dir / name
             if path.is_file():
-                if path.is_symlink():
-                    resolved_dir = skill_dir.resolve()
-                    resolved_path = path.resolve()
-                    if resolved_dir not in resolved_path.parents:
-                        return None
+                resolved_dir = skill_dir.resolve()
+                resolved_path = path.resolve()
+                if resolved_dir not in resolved_path.parents:
+                    return None
                 return path
     except OSError:
         pass

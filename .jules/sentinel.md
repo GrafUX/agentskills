@@ -91,3 +91,8 @@
 **Vulnerability:** In `parser.py`, `find_skill_md` located files using relative checks (e.g. `skill_dir / "SKILL.md"`). A malicious user could supply a directory with `SKILL.md` as a symlink pointing to arbitrary files outside of the `skill_dir` (e.g., `/etc/passwd`), causing the host application to read and parse unauthorized files.
 **Learning:** Checking `is_file()` handles symlink files but resolves them silently. For untrusted content structures, verifying directory containment of resolved target symlinks is required.
 **Prevention:** Perform containment validation by ensuring that the resolved symlink path resides underneath the resolved target directory (`resolved_dir in resolved_path.parents`).
+
+## 2025-07-25 - [Terminal Escape Sequence Injection via Untrusted Parser Errors]
+**Vulnerability:** When parsing untrusted YAML in SKILL.md files, the strictyaml library's parsing error message was printed to the user/logs without sanitization. If the file contained raw ANSI escape sequences, these sequences would propagate into the ParseError exception string and pollute logs or manipulate terminal output.
+**Learning:** Exception messages that reflect raw contents of untrusted user-controlled files must be fully sanitized before they are propagated or printed.
+**Prevention:** Always wrap library-generated exception messages containing untrusted data with standard sanitization filters like `_sanitize_error_text` before presenting them in CLI output or application-level exceptions.

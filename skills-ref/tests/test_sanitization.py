@@ -70,6 +70,18 @@ def test_parser_error_uses_safe_name(tmp_path):
     assert "a" * 64 in error_str
 
 
+def test_parse_frontmatter_invalid_yaml_ansi():
+    """Test that ParseError in parse_frontmatter sanitizes invalid YAML error messages containing ANSI sequences."""
+    content = "---\nname: \x1b[31minvalid\x1b[0m\n---\nbody"
+    with pytest.raises(ParseError) as exc_info:
+        parse_frontmatter(content)
+
+    error_str = str(exc_info.value)
+    assert "Invalid YAML in frontmatter:" in error_str
+    assert "\x1b" not in error_str
+    assert "[31m" not in error_str
+
+
 def test_parse_frontmatter_key_too_long_ansi(monkeypatch):
     """Test that ParseError in parse_frontmatter sanitizes frontmatter key with ANSI sequence."""
     long_key_with_ansi = "\x1b[31mred\x1b[0m" + "x" * 110

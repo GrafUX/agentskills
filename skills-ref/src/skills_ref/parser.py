@@ -2,7 +2,6 @@
 
 import re
 from pathlib import Path
-from typing import Optional
 
 import strictyaml
 
@@ -30,7 +29,7 @@ def _sanitize_error_text(text: str) -> str:
         return ""
     text = ANSI_ESCAPE.sub("", text)
     # Filter out dangerous non-printable control characters, keeping safe whitespace like \n, \r, \t
-    text = "".join(c for c in text if ord(c) >= 32 or c in "\n\r\t")
+    text = "".join(c for c in text if c in "\n\r\t" or c.isprintable())
     return text
 
 
@@ -44,7 +43,7 @@ def _safe_name(name: str, max_len: int = 64) -> str:
     return sanitized
 
 
-def find_skill_md(skill_dir: Path) -> Optional[Path]:
+def find_skill_md(skill_dir: Path) -> Path | None:
     """Find the SKILL.md file in a skill directory.
 
     Prefers SKILL.md (uppercase) but accepts skill.md (lowercase).
@@ -97,7 +96,7 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
     try:
         parsed = strictyaml.load(frontmatter_str)
         metadata = parsed.data
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         # Catch all exceptions because strictyaml can raise non-YAMLError exceptions
         # on certain invalid inputs (e.g. AttributeError on unprintable characters)
         if isinstance(e, strictyaml.YAMLError):

@@ -86,6 +86,37 @@ def test_parser_error_uses_safe_name(tmp_path):
     assert "a" * 64 in error_str
 
 
+def test_validate_unexpected_fields_ansi_and_control_characters_sanitized():
+    """Test that validation errors for unexpected fields sanitize/escape newlines, control characters, and ANSI escapes."""
+    metadata = {
+        "name": "valid-name",
+        "description": "valid description",
+        "unexpected\nkey\x1b[31mred\x1b[0m": "value",
+    }
+    errors = validate_metadata(metadata)
+    assert len(errors) > 0
+    err_str = errors[0]
+    assert "Unexpected fields in frontmatter:" in err_str
+    assert "\x1b" not in err_str
+    assert "\n" not in err_str
+    assert "unexpected keyred" in err_str
+
+
+def test_validate_unexpected_fields_truncation():
+    """Test that validation errors for unexpected fields truncate extremely long unexpected field names."""
+    long_key = "x" * 150
+    metadata = {
+        "name": "valid-name",
+        "description": "valid description",
+        long_key: "value",
+    }
+    errors = validate_metadata(metadata)
+    assert len(errors) > 0
+    err_str = errors[0]
+    assert "Unexpected fields in frontmatter:" in err_str
+    assert "x" * 100 + "..." in err_str
+
+
 def test_parse_frontmatter_invalid_yaml_ansi():
     """Test that ParseError in parse_frontmatter sanitizes invalid YAML error messages containing ANSI sequences."""
     content = "---\nname: \x1b[31minvalid\x1b[0m\n---\nbody"

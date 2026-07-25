@@ -14,7 +14,7 @@ from .constants import (
     MAX_SKILL_NAME_LENGTH,
 )
 from .errors import ParseError
-from .parser import find_skill_md, parse_frontmatter, _safe_name, _sanitize_error_text
+from .parser import find_skill_md, parse_frontmatter, _safe_name
 
 # Allowed frontmatter fields per Agent Skills Spec
 ALLOWED_FIELDS = {
@@ -187,8 +187,8 @@ def _validate_metadata_fields(metadata: dict) -> list[str]:
 
     extra_fields = sorted(set(str(k) for k in metadata.keys()) - ALLOWED_FIELDS)
     if extra_fields:
-        display_extra = ", ".join(extra_fields)
-        display_extra = _sanitize_error_text(display_extra)
+        sanitized_fields = [_safe_name(field, max_len=100) for field in extra_fields]
+        display_extra = ", ".join(sanitized_fields)
         if len(display_extra) > 500:
             display_extra = display_extra[:500] + "..."
         errors.append(

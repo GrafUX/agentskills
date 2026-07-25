@@ -2,7 +2,6 @@
 
 import re
 from pathlib import Path
-from typing import Optional
 
 import strictyaml
 
@@ -30,7 +29,7 @@ def _sanitize_error_text(text: str) -> str:
         return ""
     text = ANSI_ESCAPE.sub("", text)
     # Filter out dangerous non-printable control characters, keeping safe whitespace like \n, \r, \t
-    text = "".join(c for c in text if ord(c) >= 32 or c in "\n\r\t")
+    text = "".join(c for c in text if c in "\n\r\t" or c.isprintable())
     return text
 
 
@@ -39,12 +38,14 @@ def _safe_name(name: str, max_len: int = 64) -> str:
     if not name:
         return ""
     sanitized = _sanitize_error_text(name).strip()
+    # Replace newline, carriage return, and tab characters with spaces to prevent log/terminal injection
+    sanitized = sanitized.replace("\n", " ").replace("\r", " ").replace("\t", " ")
     if len(sanitized) > max_len:
         return sanitized[:max_len] + "..."
     return sanitized
 
 
-def find_skill_md(skill_dir: Path) -> Optional[Path]:
+def find_skill_md(skill_dir: Path) -> Path | None:
     """Find the SKILL.md file in a skill directory.
 
     Prefers SKILL.md (uppercase) but accepts skill.md (lowercase).
@@ -56,14 +57,15 @@ def find_skill_md(skill_dir: Path) -> Optional[Path]:
         Path to the SKILL.md file, or None if not found
     """
     try:
+        if not skill_dir.is_dir():
+            return None
         for name in ("SKILL.md", "skill.md"):
             path = skill_dir / name
             if path.is_file():
-                if path.is_symlink():
-                    resolved_dir = skill_dir.resolve()
-                    resolved_path = path.resolve()
-                    if resolved_dir not in resolved_path.parents:
-                        return None
+                resolved_dir = skill_dir.resolve()
+                resolved_path = path.resolve()
+                if resolved_dir not in resolved_path.parents:
+                    return None
                 return path
     except OSError:
         pass
@@ -97,7 +99,7 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
     try:
         parsed = strictyaml.load(frontmatter_str)
         metadata = parsed.data
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         # Catch all exceptions because strictyaml can raise non-YAMLError exceptions
         # on certain invalid inputs (e.g. AttributeError on unprintable characters)
         if isinstance(e, strictyaml.YAMLError):

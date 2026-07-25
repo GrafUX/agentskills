@@ -41,7 +41,12 @@ def _validate_name(name: str, skill_dir: Path) -> list[str]:
 
     name = unicodedata.normalize("NFKC", name.strip())
 
-    display_name = name if len(name) <= 100 else name[:100] + "..."
+    display_name = (
+        _safe_name(name, max_len=100)
+        .replace("\n", " ")
+        .replace("\r", " ")
+        .replace("\t", " ")
+    )
     if len(name) > MAX_SKILL_NAME_LENGTH:
         errors.append(
             f"Skill name '{display_name}' exceeds {MAX_SKILL_NAME_LENGTH} character limit "
@@ -154,21 +159,21 @@ def _validate_metadata_dict(custom_metadata: dict) -> list[str]:
             errors.append("Metadata keys must be strings")
             continue
 
+        display_k = (
+            _safe_name(k, max_len=100)
+            .replace("\n", " ")
+            .replace("\r", " ")
+            .replace("\t", " ")
+        )
         if len(k) > MAX_METADATA_KEY_LENGTH:
-            display_k = _sanitize_error_text(k)
-            display_k = display_k if len(display_k) <= 100 else display_k[:100] + "..."
             errors.append(
                 f"Metadata key '{display_k}' exceeds {MAX_METADATA_KEY_LENGTH} character limit"
             )
 
         if not isinstance(v, str):
-            display_k = _sanitize_error_text(k)
-            display_k = display_k if len(display_k) <= 100 else display_k[:100] + "..."
             errors.append(f"Metadata value for '{display_k}' must be a string")
             continue
         if len(v) > MAX_METADATA_VALUE_LENGTH:
-            display_k = _sanitize_error_text(k)
-            display_k = display_k if len(display_k) <= 100 else display_k[:100] + "..."
             errors.append(
                 f"Metadata value for '{display_k}' exceeds {MAX_METADATA_VALUE_LENGTH} character limit"
             )

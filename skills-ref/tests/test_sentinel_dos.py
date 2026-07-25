@@ -2,6 +2,7 @@ import pytest
 from skills_ref.parser import parse_frontmatter
 from skills_ref.errors import ParseError
 
+
 def test_metadata_complex_structure():
     yaml_str = """---
 name: test
@@ -13,6 +14,7 @@ metadata:
 ---"""
     with pytest.raises(ParseError, match="cannot be a complex structure"):
         parse_frontmatter(yaml_str)
+
 
 def test_specific_fields_not_string():
     for field in ("license", "allowed-tools", "compatibility"):

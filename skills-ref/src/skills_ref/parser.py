@@ -147,7 +147,9 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
             )
         for k, v in metadata["metadata"].items():
             if isinstance(v, (dict, list)):
-                raise ParseError("Field 'metadata' values cannot be a complex structure")
+                raise ParseError(
+                    "Field 'metadata' values cannot be a complex structure"
+                )
         metadata["metadata"] = {str(k): str(v) for k, v in metadata["metadata"].items()}
 
     return metadata, body

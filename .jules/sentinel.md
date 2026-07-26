@@ -34,6 +34,11 @@
 **Learning:** `path.exists()` does not guarantee a path is a regular file. Opening special files can result in hangs or unexpected behavior.
 **Prevention:** Always use `path.is_file()` when looking up files to ensure the target is a regular file before attempting to read its contents.
 
+## 2026-07-26 - [Prompt/Terminal Injection via XML Prompt Generation]
+**Vulnerability:** In `to_prompt`, while `html.escape()` prevented XML element injection, raw properties (like `name`, `description`, or the resolved `skill_md_path`) were interpolated into the prompt without sanitizing unprintable control characters or ANSI escape codes. An attacker controlling skill metadata or directory names could trigger log manipulation or terminal injection when host applications print or log the generated system prompt.
+**Learning:** XML/HTML escaping only neutralizes markup language syntax. Host applications rendering or logging prompts remain vulnerable to terminal sequence or log injection if the payload contains unprintable or terminal escape control codes.
+**Prevention:** Sanitize all untrusted inputs reflected in generated system prompts by stripping ANSI escape sequences and non-printable control characters, even when using XML wrappers or escaping tools.
+
 ## 2024-06-27 - Implement String Length Limits for YAML Parsing
 
 **Vulnerability:** The validator for SKILL.md did not impose limits on the length of strings for `license`, `allowed-tools`, and custom `metadata` dictionary keys and values. This lack of constraints could allow parsing maliciously crafted strings, leading to resource exhaustion (DoS) when manipulating those items.

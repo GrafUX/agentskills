@@ -184,3 +184,34 @@ Body
 
     # 1 call from to_prompt, plus 2 calls internally in find_skill_md due to unconditional containment check
     assert resolve_calls == 3
+
+
+def test_prompt_sanitization(tmp_path, monkeypatch):
+    """Control characters and ANSI escape codes in skill properties are sanitized in to_prompt."""
+    skill_dir = tmp_path / "ansi-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("""---
+name: ansi-skill
+description: A test skill
+---
+Body
+""")
+
+    from skills_ref.models import SkillProperties
+    import skills_ref.prompt
+
+    # Mock read_properties to return properties containing ANSI escapes and control characters
+    def mock_read_properties(path):
+        return SkillProperties(
+            name="ansi-\x1b[31mskill\x1b[0m",
+            description="Description with \x1b[31mcolor\x1b[0m and \x00control",
+            skill_md_path=path / "SKILL.md",
+        )
+
+    monkeypatch.setattr(skills_ref.prompt, "read_properties", mock_read_properties)
+
+    result = to_prompt([skill_dir])
+    assert "ansi-skill" in result
+    assert "\x1b" not in result
+    assert "[31m" not in result
+    assert "Description with color and control" in result

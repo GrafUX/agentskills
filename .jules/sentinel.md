@@ -101,3 +101,8 @@
 **Vulnerability:** First, raw input whitespaces (like newlines, carriage returns, or tabs) reflected in exception/error messages could lead to log/terminal injection. Second, `find_skill_md` previously resolved and verified parent directory containment *only* if the target file was a symlink, which left potential OS-specific link behaviors or unhandled directory edge cases exposed.
 **Learning:** For robust defense-in-depth, validation/containment checks must run unconditionally (and check directory validity beforehand). However, unconditional resolution (via `Path.resolve()`) generates extra file system queries, meaning tests asserting exact call counts on `Path.resolve()` must be updated accordingly.
 **Prevention:** Replace newlines/tabs with spaces in error reflections. Ensure that directory validity is checked early (`is_dir()`) and that directory containment validation for file resolution is done unconditionally for all parsed paths.
+
+## 2025-07-27 - [Stringification DoS via Complex Metadata]
+**Vulnerability:** In `parser.py`, the custom `metadata` dictionary values were blindly cast to strings using `str(v)`. If an attacker provided a deeply nested YAML structure (e.g., heavily nested dictionaries or lists), calling `str()` on the parsed structure could consume excessive CPU and memory, leading to a Denial of Service (DoS).
+**Learning:** `strictyaml` can parse structures into generic Python dicts/lists. Blindly calling string formatting or `str()` on untrusted, complex structures can be computationally expensive and dangerous.
+**Prevention:** Explicitly reject complex types (like `dict` or `list`) for metadata values before applying `str()`. Ensure that such generic fields only accept scalar values.

@@ -86,6 +86,20 @@ def test_parser_error_uses_safe_name(tmp_path):
     assert "a" * 64 in error_str
 
 
+def test_validate_metadata_unexpected_field_sanitized():
+    """Test that validate_metadata sanitizes unexpected metadata fields with ANSI and control sequences."""
+    metadata = {
+        "name": "valid-name",
+        "description": "test description",
+        "bad\x1b[31mfield\x1b[0m\nnewline": "some value",
+    }
+    errors = validate_metadata(metadata)
+    assert len(errors) > 0
+    assert any("badfield newline" in err for err in errors)
+    for err in errors:
+        assert "\x1b" not in err
+
+
 def test_parse_frontmatter_invalid_yaml_ansi():
     """Test that ParseError in parse_frontmatter sanitizes invalid YAML error messages containing ANSI sequences."""
     content = "---\nname: \x1b[31minvalid\x1b[0m\n---\nbody"

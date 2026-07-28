@@ -14,7 +14,7 @@ from .constants import (
     MAX_SKILL_NAME_LENGTH,
 )
 from .errors import ParseError
-from .parser import find_skill_md, parse_frontmatter
+from .parser import find_skill_md, parse_frontmatter, _safe_name
 
 # Allowed frontmatter fields per Agent Skills Spec
 ALLOWED_FIELDS = {
@@ -41,7 +41,12 @@ def _validate_name(name: str, skill_dir: Path) -> list[str]:
 
     name = unicodedata.normalize("NFKC", name.strip())
 
-    display_name = name if len(name) <= 100 else name[:100] + "..."
+    display_name = (
+        _safe_name(name, max_len=100)
+        .replace("\n", " ")
+        .replace("\r", " ")
+        .replace("\t", " ")
+    )
     if len(name) > MAX_SKILL_NAME_LENGTH:
         errors.append(
             f"Skill name '{display_name}' exceeds {MAX_SKILL_NAME_LENGTH} character limit "
@@ -67,7 +72,7 @@ def _validate_name(name: str, skill_dir: Path) -> list[str]:
         dir_name = unicodedata.normalize("NFKC", skill_dir.name)
         if dir_name != name:
             errors.append(
-                f"Directory name '{skill_dir.name}' must match skill name '{display_name}'"
+                f"Directory name '{_safe_name(skill_dir.name)}' must match skill name '{display_name}'"
             )
 
     return errors
@@ -154,7 +159,12 @@ def _validate_metadata_dict(custom_metadata: dict) -> list[str]:
             errors.append("Metadata keys must be strings")
             continue
 
-        display_k = k if len(k) <= 100 else k[:100] + "..."
+        display_k = (
+            _safe_name(k, max_len=100)
+            .replace("\n", " ")
+            .replace("\r", " ")
+            .replace("\t", " ")
+        )
         if len(k) > MAX_METADATA_KEY_LENGTH:
             errors.append(
                 f"Metadata key '{display_k}' exceeds {MAX_METADATA_KEY_LENGTH} character limit"
@@ -175,12 +185,10 @@ def _validate_metadata_fields(metadata: dict) -> list[str]:
     """Validate that only allowed fields are present."""
     errors = []
 
-    # Convert keys to strings before set operations to prevent TypeErrors
-    stringified_keys = {str(k) for k in metadata.keys()}
-    extra_fields = sorted(stringified_keys - ALLOWED_FIELDS)
-
+    extra_fields = sorted(set(str(k) for k in metadata.keys()) - ALLOWED_FIELDS)
     if extra_fields:
-        display_extra = ", ".join(extra_fields)
+        sanitized_fields = [_safe_name(f, max_len=100) for f in extra_fields]
+        display_extra = ", ".join(sanitized_fields)
         if len(display_extra) > 500:
             display_extra = display_extra[:500] + "..."
         errors.append(
@@ -249,10 +257,10 @@ def validate(skill_dir: Path) -> list[str]:
 
     try:
         if not skill_dir.exists():
-            return [f"Path does not exist: {skill_dir.name}"]
+            return [f"Path does not exist: {_safe_name(skill_dir.name)}"]
 
         if not skill_dir.is_dir():
-            return [f"Not a directory: {skill_dir.name}"]
+            return [f"Not a directory: {_safe_name(skill_dir.name)}"]
 
         skill_md = find_skill_md(skill_dir)
         if skill_md is None:
@@ -261,17 +269,21 @@ def validate(skill_dir: Path) -> list[str]:
         with open(skill_md, "r", encoding="utf-8") as f:
             content = f.read(1024 * 1024 + 1)
             if len(content) > 1024 * 1024:
-                return [f"SKILL.md in {skill_dir.name} exceeds 1MB size limit"]
+                return [
+                    f"SKILL.md in {_safe_name(skill_dir.name)} exceeds 1MB size limit"
+                ]
         metadata, _ = parse_frontmatter(content)
     except OSError as e:
-        return [f"Failed to read SKILL.md in {skill_dir.name}: {e.strerror}"]
+        return [
+            f"Failed to read SKILL.md in {_safe_name(skill_dir.name)}: {e.strerror}"
+        ]
     except UnicodeDecodeError:
-        return [f"SKILL.md in {skill_dir.name} is not valid UTF-8"]
+        return [f"SKILL.md in {_safe_name(skill_dir.name)} is not valid UTF-8"]
     except ParseError as e:
         return [str(e)]
     except RuntimeError:
         return [
-            f"Failed to read SKILL.md in {skill_dir.name}: Symlink loop or unresolvable path"
+            f"Failed to read SKILL.md in {_safe_name(skill_dir.name)}: Symlink loop or unresolvable path"
         ]
 
     return validate_metadata(metadata, skill_dir)

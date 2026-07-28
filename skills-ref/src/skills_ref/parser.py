@@ -128,6 +128,11 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
             raise ParseError(
                 f"Frontmatter key '{display_key}' exceeds {MAX_METADATA_KEY_LENGTH} character limit"
             )
+        if key != "metadata" and isinstance(value, (dict, list)):
+            display_key = _safe_name(key, max_len=100)
+            raise ParseError(
+                f"Complex structures (dict/list) are not allowed in frontmatter field '{display_key}'"
+            )
         if isinstance(value, str) and len(value) > MAX_FRONTMATTER_VALUE_LENGTH:
             display_key = _safe_name(key, max_len=100)
             raise ParseError(

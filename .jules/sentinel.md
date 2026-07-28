@@ -34,6 +34,11 @@
 **Learning:** `path.exists()` does not guarantee a path is a regular file. Opening special files can result in hangs or unexpected behavior.
 **Prevention:** Always use `path.is_file()` when looking up files to ensure the target is a regular file before attempting to read its contents.
 
+## 2026-07-26 - [Prompt/Terminal Injection via XML Prompt Generation]
+**Vulnerability:** In `to_prompt`, while `html.escape()` prevented XML element injection, raw properties (like `name`, `description`, or the resolved `skill_md_path`) were interpolated into the prompt without sanitizing unprintable control characters or ANSI escape codes. An attacker controlling skill metadata or directory names could trigger log manipulation or terminal injection when host applications print or log the generated system prompt.
+**Learning:** XML/HTML escaping only neutralizes markup language syntax. Host applications rendering or logging prompts remain vulnerable to terminal sequence or log injection if the payload contains unprintable or terminal escape control codes.
+**Prevention:** Sanitize all untrusted inputs reflected in generated system prompts by stripping ANSI escape sequences and non-printable control characters, even when using XML wrappers or escaping tools.
+
 ## 2024-06-27 - Implement String Length Limits for YAML Parsing
 
 **Vulnerability:** The validator for SKILL.md did not impose limits on the length of strings for `license`, `allowed-tools`, and custom `metadata` dictionary keys and values. This lack of constraints could allow parsing maliciously crafted strings, leading to resource exhaustion (DoS) when manipulating those items.
@@ -73,6 +78,11 @@
 **Learning:** Reflecting untrusted input in error messages is a common source of both information leakage and resource exhaustion. Even if the input itself is limited (e.g., to 4096 chars), concatenating multiple such inputs or including large library-generated error excerpts can create unexpectedly large payloads.
 **Prevention:** Always truncate untrusted data and external library error messages when including them in application-level exceptions or user-facing output.
 
+## 2026-01-13 - XSS via Unvalidated URL in JSX Components
+**Vulnerability:** Direct assignment of potentially untrusted data to href attributes in LogoCarousel.jsx and ClientShowcase.jsx without protocol validation.
+**Learning:** Assigning raw URL strings to href attributes on anchor tags (`<a>`) in React/JSX allows javascript: or data: URIs, leading to Cross-Site Scripting (XSS) if the client URL input can be influenced by users or external data. Protocol-relative URLs ("//...") must also be explicitly rejected as they redirect to attacker-controlled hosts over the page's own protocol.
+**Prevention:** Strictly sanitize URL strings to ensure they only start with allowed secure protocols (http://, https://) or safe same-site relative paths (/path but not //host), returning undefined so React omits the href attribute entirely for invalid inputs.
+
 ## 2025-07-22 - [Prompt Inflation & DoS via Unbounded Skill Lists]
 **Vulnerability:** The `to_prompt` function accepted an unbounded list of skill directories and processed each one, including potential duplicates or symlinks to the same directory. This could lead to Resource Exhaustion (Prompt Inflation) by exceeding the LLM context window or consuming excessive CPU/IO.
 **Learning:** When processing collections of external inputs that are used to build a larger payload, both the total number of supplied items and the number of unique resolved items must be bounded.
@@ -101,7 +111,15 @@
 **Vulnerability:** First, raw input whitespaces (like newlines, carriage returns, or tabs) reflected in exception/error messages could lead to log/terminal injection. Second, `find_skill_md` previously resolved and verified parent directory containment *only* if the target file was a symlink, which left potential OS-specific link behaviors or unhandled directory edge cases exposed.
 **Learning:** For robust defense-in-depth, validation/containment checks must run unconditionally (and check directory validity beforehand). However, unconditional resolution (via `Path.resolve()`) generates extra file system queries, meaning tests asserting exact call counts on `Path.resolve()` must be updated accordingly.
 **Prevention:** Replace newlines/tabs with spaces in error reflections. Ensure that directory validity is checked early (`is_dir()`) and that directory containment validation for file resolution is done unconditionally for all parsed paths.
+<<<<<<< HEAD
 ## 2024-05-24 - [Stringification DoS via Custom Metadata]
 **Vulnerability:** Calling `str()` blindly on recursively parsed dictionaries (like custom user metadata in `metadata['metadata']`) can lead to a Denial of Service (DoS) if the nested structure hits recursion or maximum representation limits.
 **Learning:** `strictyaml` can parse nested data structures when relying on untyped mappings unless explicit schemas define restrictions. When generic untyped nested values are converted to string (`str(v)`), an attacker can supply a deeply nested tree to cause a memory/CPU DoS or Python recursion crash when the dictionary tries to resolve its representation.
 **Prevention:** For custom metadata fields where string values are expected, explicitly check and reject complex structures (`isinstance(v, (dict, list))`) *before* applying `str()` to prevent the stringification engine from trying to process large, deep structures.
+=======
+
+## 2025-07-27 - [Stringification DoS via Complex Metadata]
+**Vulnerability:** In `parser.py`, the custom `metadata` dictionary values were blindly cast to strings using `str(v)`. If an attacker provided a deeply nested YAML structure (e.g., heavily nested dictionaries or lists), calling `str()` on the parsed structure could consume excessive CPU and memory, leading to a Denial of Service (DoS).
+**Learning:** `strictyaml` can parse structures into generic Python dicts/lists. Blindly calling string formatting or `str()` on untrusted, complex structures can be computationally expensive and dangerous.
+**Prevention:** Explicitly reject complex types (like `dict` or `list`) for metadata values before applying `str()`. Ensure that such generic fields only accept scalar values.
+>>>>>>> origin/main

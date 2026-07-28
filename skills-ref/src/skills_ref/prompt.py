@@ -5,7 +5,7 @@ from pathlib import Path
 
 from .constants import MAX_SKILLS_PER_PROMPT
 from .errors import SkillError
-from .parser import read_properties, _safe_name
+from .parser import read_properties, _safe_name, _sanitize_error_text
 
 
 def to_prompt(skill_dirs: list[Path]) -> str:
@@ -57,16 +57,35 @@ def to_prompt(skill_dirs: list[Path]) -> str:
             props = read_properties(skill_dir)
             seen.add(skill_dir)
 
+            sanitized_name = (
+                _sanitize_error_text(props.name)
+                .replace("\n", " ")
+                .replace("\r", " ")
+                .replace("\t", " ")
+            )
+            sanitized_description = (
+                _sanitize_error_text(props.description)
+                .replace("\n", " ")
+                .replace("\r", " ")
+                .replace("\t", " ")
+            )
+            sanitized_path = (
+                _sanitize_error_text(str(props.skill_md_path))
+                .replace("\n", " ")
+                .replace("\r", " ")
+                .replace("\t", " ")
+            )
+
             lines.append("<skill>")
             lines.append("<name>")
-            lines.append(html.escape(props.name))
+            lines.append(html.escape(sanitized_name))
             lines.append("</name>")
             lines.append("<description>")
-            lines.append(html.escape(props.description))
+            lines.append(html.escape(sanitized_description))
             lines.append("</description>")
 
             lines.append("<location>")
-            lines.append(html.escape(str(props.skill_md_path)))
+            lines.append(html.escape(sanitized_path))
             lines.append("</location>")
 
             lines.append("</skill>")

@@ -1,7 +1,7 @@
 """YAML frontmatter parsing for SKILL.md files."""
 
+import re
 from pathlib import Path
-from typing import Optional
 
 import strictyaml
 
@@ -20,8 +20,32 @@ from .constants import (
 from .errors import ParseError, ValidationError
 from .models import SkillProperties
 
+ANSI_ESCAPE = re.compile(r"\x1b\[[0-9;?]*[a-zA-Z]")
 
-def find_skill_md(skill_dir: Path) -> Optional[Path]:
+
+def _sanitize_error_text(text: str) -> str:
+    """Strip ANSI escape codes and other potentially dangerous control characters from error messages."""
+    if not isinstance(text, str):
+        return ""
+    text = ANSI_ESCAPE.sub("", text)
+    # Filter out dangerous non-printable control characters, keeping safe whitespace like \n, \r, \t
+    text = "".join(c for c in text if c in "\n\r\t" or c.isprintable())
+    return text
+
+
+def _safe_name(name: str, max_len: int = 64) -> str:
+    """Sanitize and truncate untrusted strings (like directory names or inputs) reflected in error messages."""
+    if not name:
+        return ""
+    sanitized = _sanitize_error_text(name).strip()
+    # Replace newline, carriage return, and tab characters with spaces to prevent log/terminal injection
+    sanitized = sanitized.replace("\n", " ").replace("\r", " ").replace("\t", " ")
+    if len(sanitized) > max_len:
+        return sanitized[:max_len] + "..."
+    return sanitized
+
+
+def find_skill_md(skill_dir: Path) -> Path | None:
     """Find the SKILL.md file in a skill directory.
 
     Prefers SKILL.md (uppercase) but accepts skill.md (lowercase).
@@ -33,9 +57,15 @@ def find_skill_md(skill_dir: Path) -> Optional[Path]:
         Path to the SKILL.md file, or None if not found
     """
     try:
+        if not skill_dir.is_dir():
+            return None
         for name in ("SKILL.md", "skill.md"):
             path = skill_dir / name
             if path.is_file():
+                resolved_dir = skill_dir.resolve()
+                resolved_path = path.resolve()
+                if resolved_dir not in resolved_path.parents:
+                    return None
                 return path
     except OSError:
         pass
@@ -69,11 +99,11 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
     try:
         parsed = strictyaml.load(frontmatter_str)
         metadata = parsed.data
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         # Catch all exceptions because strictyaml can raise non-YAMLError exceptions
         # on certain invalid inputs (e.g. AttributeError on unprintable characters)
         if isinstance(e, strictyaml.YAMLError):
-            err_msg = str(e)
+            err_msg = _sanitize_error_text(str(e))
             if len(err_msg) > 1000:
                 err_msg = err_msg[:1000] + "..."
             raise ParseError(f"Invalid YAML in frontmatter: {err_msg}")
@@ -92,12 +122,14 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
         if not isinstance(key, str):
             raise ParseError("Frontmatter keys must be strings")
 
-        display_key = key if len(key) <= 100 else key[:100] + "..."
-        if len(key) > MAX_METADATA_KEY_LENGTH:
+        len_key = len(key)
+        if len_key > MAX_METADATA_KEY_LENGTH:
+            display_key = _safe_name(key, max_len=100)
             raise ParseError(
                 f"Frontmatter key '{display_key}' exceeds {MAX_METADATA_KEY_LENGTH} character limit"
             )
         if isinstance(value, str) and len(value) > MAX_FRONTMATTER_VALUE_LENGTH:
+            display_key = _safe_name(key, max_len=100)
             raise ParseError(
                 f"Frontmatter value for '{display_key}' exceeds {MAX_FRONTMATTER_VALUE_LENGTH} character limit"
             )
@@ -134,19 +166,23 @@ def read_properties(skill_dir: Path) -> SkillProperties:
         skill_md = find_skill_md(skill_dir)
 
         if skill_md is None:
-            raise ParseError(f"SKILL.md not found in {skill_dir.name}")
+            raise ParseError(f"SKILL.md not found in {_safe_name(skill_dir.name)}")
 
         with open(skill_md, "r", encoding="utf-8") as f:
             content = f.read(1024 * 1024 + 1)
             if len(content) > 1024 * 1024:
-                raise ParseError(f"SKILL.md in {skill_dir.name} exceeds 1MB size limit")
+                raise ParseError(
+                    f"SKILL.md in {_safe_name(skill_dir.name)} exceeds 1MB size limit"
+                )
     except OSError as e:
-        raise ParseError(f"Failed to read SKILL.md in {skill_dir.name}: {e.strerror}")
+        raise ParseError(
+            f"Failed to read SKILL.md in {_safe_name(skill_dir.name)}: {e.strerror}"
+        )
     except UnicodeDecodeError:
-        raise ParseError(f"SKILL.md in {skill_dir.name} is not valid UTF-8")
+        raise ParseError(f"SKILL.md in {_safe_name(skill_dir.name)} is not valid UTF-8")
     except RuntimeError:
         raise ParseError(
-            f"Failed to read SKILL.md in {skill_dir.name}: Symlink loop or unresolvable path"
+            f"Failed to read SKILL.md in {_safe_name(skill_dir.name)}: Symlink loop or unresolvable path"
         )
 
     metadata, _ = parse_frontmatter(content)
@@ -225,4 +261,5 @@ def read_properties(skill_dir: Path) -> SkillProperties:
         compatibility=comp_val,
         allowed_tools=tools_val,
         metadata=custom_metadata,
+        skill_md_path=skill_md,
     )

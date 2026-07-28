@@ -3,7 +3,9 @@
 import html
 from pathlib import Path
 
-from .parser import find_skill_md, read_properties
+from .constants import MAX_SKILLS_PER_PROMPT
+from .errors import SkillError
+from .parser import read_properties, _safe_name
 
 
 def to_prompt(skill_dirs: list[Path]) -> str:
@@ -32,38 +34,49 @@ def to_prompt(skill_dirs: list[Path]) -> str:
     if not skill_dirs:
         return "<available_skills>\n</available_skills>"
 
+    if len(skill_dirs) > MAX_SKILLS_PER_PROMPT:
+        raise SkillError(
+            f"Number of skill directories exceeds maximum limit of {MAX_SKILLS_PER_PROMPT}"
+        )
+
     lines = ["<available_skills>"]
+    seen = set()
+    resolved_cache = {}
 
-    for skill_dir in skill_dirs:
+    for d in skill_dirs:
+        path = Path(d)
         try:
-            skill_dir = Path(skill_dir).resolve()
+            skill_dir = resolved_cache.get(path)
+            if skill_dir is None:
+                skill_dir = path.resolve()
+                resolved_cache[path] = skill_dir
+
+            if skill_dir in seen:
+                continue
+
             props = read_properties(skill_dir)
+            seen.add(skill_dir)
+
+            lines.append("<skill>")
+            lines.append("<name>")
+            lines.append(html.escape(props.name))
+            lines.append("</name>")
+            lines.append("<description>")
+            lines.append(html.escape(props.description))
+            lines.append("</description>")
+
+            lines.append("<location>")
+            lines.append(html.escape(str(props.skill_md_path)))
+            lines.append("</location>")
+
+            lines.append("</skill>")
         except (OSError, RuntimeError) as e:
-            from .errors import SkillError
-
-            error_msg = (
-                str(e.strerror)
-                if hasattr(e, "strerror")
-                else "Symlink loop or unresolvable path"
-            )
+            error_msg = getattr(e, "strerror", None)
+            if not error_msg:
+                error_msg = "Symlink loop or unresolvable path"
             raise SkillError(
-                f"Failed to resolve skill directory {Path(skill_dir).name}: {error_msg}"
+                f"Failed to process skill directory {_safe_name(path.name)}: {error_msg}"
             )
-
-        lines.append("<skill>")
-        lines.append("<name>")
-        lines.append(html.escape(props.name))
-        lines.append("</name>")
-        lines.append("<description>")
-        lines.append(html.escape(props.description))
-        lines.append("</description>")
-
-        skill_md_path = find_skill_md(skill_dir)
-        lines.append("<location>")
-        lines.append(html.escape(str(skill_md_path)))
-        lines.append("</location>")
-
-        lines.append("</skill>")
 
     lines.append("</available_skills>")
 

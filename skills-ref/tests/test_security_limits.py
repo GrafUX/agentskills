@@ -1,5 +1,5 @@
 import pytest
-from skills_ref.parser import parse_frontmatter
+from skills_ref.parser import parse_frontmatter, find_skill_md, read_properties
 from skills_ref.errors import ParseError
 from skills_ref.constants import (
     MAX_FRONTMATTER_FIELDS_COUNT,
@@ -50,12 +50,6 @@ def test_parse_frontmatter_value_too_long():
 
 
 def test_parse_frontmatter_non_string_key():
-    # We want to test that non-string keys raise a ParseError
-    # However, strictyaml often parses keys as strings anyway.
-    # To definitely test this, we would need a way to force a non-string key.
-    # If strictyaml converts it to string "1", then our current code won't catch it as non-string.
-    # But if it DOES return it as int, our code SHOULD raise ParseError.
-
     content = "---\n1: value\n---\nbody"
     try:
         metadata, body = parse_frontmatter(content)
@@ -64,3 +58,46 @@ def test_parse_frontmatter_non_string_key():
     except ParseError as e:
         # If it failed, it should be because it's not a string
         assert "Frontmatter keys must be strings" in str(e)
+
+
+def test_symlink_path_traversal_protection(tmp_path):
+    # Create a secret file outside the skill directory
+    secret_file = tmp_path / "secret.txt"
+    secret_file.write_text(
+        "---\nname: secret-skill\ndescription: secret data\n---\nsecret content"
+    )
+
+    # Create the skill directory
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+
+    # Create a symlink named SKILL.md inside skill_dir pointing to the secret file outside
+    symlink_path = skill_dir / "SKILL.md"
+    try:
+        symlink_path.symlink_to(secret_file)
+    except OSError:
+        pytest.skip("Symlinks are not supported or not permitted on this platform")
+
+    # find_skill_md should return None because the resolved SKILL.md is outside skill_dir
+    assert find_skill_md(skill_dir) is None
+
+    # Consequently, read_properties should raise a ParseError
+    with pytest.raises(ParseError, match="SKILL.md not found in"):
+        read_properties(skill_dir)
+
+
+def test_skill_md_symlink_inside_dir(tmp_path):
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+
+    real_md = skill_dir / "REAL_SKILL.md"
+    real_md.write_text("---\nname: my-skill\ndescription: test\n---")
+
+    skill_md = skill_dir / "SKILL.md"
+    try:
+        skill_md.symlink_to(real_md)
+    except OSError:
+        pytest.skip("Symlinks are not supported or not permitted on this platform")
+
+    props = read_properties(skill_dir)
+    assert props.name == "my-skill"

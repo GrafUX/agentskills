@@ -78,6 +78,11 @@
 **Learning:** Reflecting untrusted input in error messages is a common source of both information leakage and resource exhaustion. Even if the input itself is limited (e.g., to 4096 chars), concatenating multiple such inputs or including large library-generated error excerpts can create unexpectedly large payloads.
 **Prevention:** Always truncate untrusted data and external library error messages when including them in application-level exceptions or user-facing output.
 
+## 2026-01-13 - XSS via Unvalidated URL in JSX Components
+**Vulnerability:** Direct assignment of potentially untrusted data to href attributes in LogoCarousel.jsx and ClientShowcase.jsx without protocol validation.
+**Learning:** Assigning raw URL strings to href attributes on anchor tags (`<a>`) in React/JSX allows javascript: or data: URIs, leading to Cross-Site Scripting (XSS) if the client URL input can be influenced by users or external data. Protocol-relative URLs ("//...") must also be explicitly rejected as they redirect to attacker-controlled hosts over the page's own protocol.
+**Prevention:** Strictly sanitize URL strings to ensure they only start with allowed secure protocols (http://, https://) or safe same-site relative paths (/path but not //host), returning undefined so React omits the href attribute entirely for invalid inputs.
+
 ## 2025-07-22 - [Prompt Inflation & DoS via Unbounded Skill Lists]
 **Vulnerability:** The `to_prompt` function accepted an unbounded list of skill directories and processed each one, including potential duplicates or symlinks to the same directory. This could lead to Resource Exhaustion (Prompt Inflation) by exceeding the LLM context window or consuming excessive CPU/IO.
 **Learning:** When processing collections of external inputs that are used to build a larger payload, both the total number of supplied items and the number of unique resolved items must be bounded.

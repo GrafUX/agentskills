@@ -28,8 +28,17 @@ export const LogoCarousel = ({clients}) => {
   );
   const cycleDuration = cycleWidth / PX_PER_SECOND;
 
+  const sanitizeUrl = (url) => {
+    if (!url) return undefined;
+    const trimmed = url.trim();
+    if (/^(https?:\/\/|\/(?!\/))/i.test(trimmed)) {
+      return trimmed;
+    }
+    return undefined;
+  };
+
   const Logo = ({ client }) => (
-    <a href={client.url} className="block no-underline border-none w-full h-full">
+    <a href={sanitizeUrl(client.url)} className="block no-underline border-none w-full h-full">
       <img className="block dark:hidden object-contain w-full h-full !my-0" src={client.lightSrc} alt={client.name} noZoom />
       <img className="hidden dark:block object-contain w-full h-full !my-0" src={client.darkSrc} alt={client.name} noZoom />
     </a>

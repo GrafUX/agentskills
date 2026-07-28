@@ -416,24 +416,3 @@ Body
 """)
     errors = validate(skill_dir)
     assert any(f"exceeds {MAX_METADATA_KEYS_COUNT} keys limit" in e for e in errors)
-
-
-def test_validate_metadata_not_dict():
-    """Test that passing non-dictionary to validate_metadata returns an error instead of crashing."""
-    from skills_ref.validator import validate_metadata
-
-    errors = validate_metadata("not a dict")
-    assert len(errors) == 1
-    assert "Frontmatter must be a dictionary" in errors[0]
-
-
-def test_validate_metadata_non_string_keys():
-    """Test that non-string keys in metadata don't crash validate_metadata."""
-    from skills_ref.validator import validate_metadata
-
-    # Passing an integer key which caused TypeError during string join
-    errors = validate_metadata({1: "value", "name": "test", "description": "test"})
-
-    assert len(errors) >= 1
-    assert any("Unexpected fields" in e for e in errors)
-    assert any("1" in e for e in errors)

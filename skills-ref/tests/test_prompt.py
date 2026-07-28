@@ -1,7 +1,11 @@
 """Tests for prompt module."""
 
 import sys
+from pathlib import Path
+
 import pytest
+from skills_ref.constants import MAX_SKILLS_PER_PROMPT
+from skills_ref.errors import SkillError
 from skills_ref.prompt import to_prompt
 
 
@@ -90,3 +94,135 @@ Body
     assert "&lt;" in result
     assert "&gt;" in result
     assert "special-location-&-<>" not in result
+
+
+def test_deduplicate_skills(tmp_path):
+    """Duplicate skill directories are only included once."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+---
+Body
+""")
+    # Pass the same skill directory twice (direct path and relative path that resolves to same)
+    result = to_prompt([skill_dir, skill_dir, skill_dir])
+    assert result.count("<skill>") == 1
+    assert result.count("</skill>") == 1
+
+    import os
+
+    rel_path = os.path.relpath(skill_dir)
+    result = to_prompt([skill_dir, rel_path])
+    assert result.count("<skill>") == 1
+
+
+def test_max_skills_limit(tmp_path):
+    """Providing too many skills raises SkillError."""
+    skill_dirs = []
+    for i in range(MAX_SKILLS_PER_PROMPT + 1):
+        d = tmp_path / f"skill-{i}"
+        d.mkdir()
+        (d / "SKILL.md").write_text(f"""---
+name: skill-{i}
+description: Skill {i}
+---
+Body
+""")
+        skill_dirs.append(d)
+
+    with pytest.raises(SkillError) as excinfo:
+        to_prompt(skill_dirs)
+    assert (
+        f"Number of skill directories exceeds maximum limit of {MAX_SKILLS_PER_PROMPT}"
+        in str(excinfo.value)
+    )
+
+
+def test_max_skill_directory_inputs_limit(tmp_path):
+    """Providing too many duplicate inputs raises SkillError before resolve."""
+    skill_dir = tmp_path / "repeated-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("""---
+name: repeated-skill
+description: A test skill
+---
+Body
+""")
+
+    with pytest.raises(SkillError) as excinfo:
+        to_prompt([skill_dir] * (MAX_SKILLS_PER_PROMPT + 1))
+    assert (
+        f"Number of skill directories exceeds maximum limit of {MAX_SKILLS_PER_PROMPT}"
+        in str(excinfo.value)
+    )
+
+
+def test_duplicate_paths_resolved_once(tmp_path, monkeypatch):
+    """Exact duplicate paths only trigger one resolve call in prompt.py caching, plus internal find_skill_md resolve."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+---
+Body
+""")
+
+    resolve_calls = 0
+    original_resolve = Path.resolve
+
+    def counting_resolve(self):
+        nonlocal resolve_calls
+        resolve_calls += 1
+        return original_resolve(self)
+
+    monkeypatch.setattr(Path, "resolve", counting_resolve)
+
+    to_prompt([skill_dir, skill_dir, skill_dir])
+
+    # 1 call from to_prompt, plus 2 calls internally in find_skill_md due to unconditional containment check
+    assert resolve_calls == 3
+
+
+def test_prompt_sanitization(tmp_path, monkeypatch):
+    """Control characters and ANSI escape codes in skill properties are sanitized in to_prompt."""
+    skill_dir = tmp_path / "ansi-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("""---
+name: ansi-skill
+description: A test skill
+---
+Body
+""")
+
+    from skills_ref.models import SkillProperties
+    import skills_ref.prompt
+
+    # Mock read_properties to return properties containing ANSI escapes and control characters
+    def mock_read_properties(path):
+        return SkillProperties(
+            name="ansi-\x1b[31mskill\x1b[0m\nwith\nnewlines",
+            description="Description with \x1b[31mcolor\x1b[0m and \x00control\tcharacters\rhere",
+            skill_md_path=path / "SKILL.md",
+        )
+
+    monkeypatch.setattr(skills_ref.prompt, "read_properties", mock_read_properties)
+
+    result = to_prompt([skill_dir])
+    assert "ansi-skill with newlines" in result
+    assert "Description with color and control characters here" in result
+    assert "\x1b" not in result
+    assert "\x00" not in result
+    assert "\r" not in result
+    assert "\t" not in result
+    assert "[31m" not in result
+
+    # Verify exact element contents to ensure no dangerous control chars exist
+    collapsed = result.replace("\n", "")
+    assert "<name>ansi-skill with newlines</name>" in collapsed
+    assert (
+        "<description>Description with color and control characters here</description>"
+        in collapsed
+    )

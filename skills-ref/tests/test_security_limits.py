@@ -1,14 +1,11 @@
 import pytest
-from skills_ref.parser import parse_frontmatter
+from skills_ref.parser import parse_frontmatter, find_skill_md, read_properties
 from skills_ref.errors import ParseError
 from skills_ref.constants import (
     MAX_FRONTMATTER_FIELDS_COUNT,
     MAX_METADATA_KEY_LENGTH,
     MAX_FRONTMATTER_VALUE_LENGTH,
-    MAX_SKILLS_PER_PROMPT,
 )
-from skills_ref.prompt import to_prompt
-from skills_ref.errors import SkillError
 
 
 def test_parse_frontmatter_too_many_fields():
@@ -53,12 +50,6 @@ def test_parse_frontmatter_value_too_long():
 
 
 def test_parse_frontmatter_non_string_key():
-    # We want to test that non-string keys raise a ParseError
-    # However, strictyaml often parses keys as strings anyway.
-    # To definitely test this, we would need a way to force a non-string key.
-    # If strictyaml converts it to string "1", then our current code won't catch it as non-string.
-    # But if it DOES return it as int, our code SHOULD raise ParseError.
-
     content = "---\n1: value\n---\nbody"
     try:
         metadata, body = parse_frontmatter(content)
@@ -69,70 +60,44 @@ def test_parse_frontmatter_non_string_key():
         assert "Frontmatter keys must be strings" in str(e)
 
 
-def test_to_prompt_limit_exceeded(tmp_path):
-    # Create more than MAX_SKILLS_PER_PROMPT unique skill directories
-    skill_dirs = []
-    for i in range(MAX_SKILLS_PER_PROMPT + 1):
-        skill_dir = tmp_path / f"skill-{i}"
-        skill_dir.mkdir()
-        (skill_dir / "SKILL.md").write_text(
-            f"---\nname: skill-{i}\ndescription: desc\n---\n"
-        )
-        skill_dirs.append(skill_dir)
-
-    with pytest.raises(SkillError) as excinfo:
-        to_prompt(skill_dirs)
-    assert f"Number of skills exceeds the limit of {MAX_SKILLS_PER_PROMPT}" in str(
-        excinfo.value
+def test_symlink_path_traversal_protection(tmp_path):
+    # Create a secret file outside the skill directory
+    secret_file = tmp_path / "secret.txt"
+    secret_file.write_text(
+        "---\nname: secret-skill\ndescription: secret data\n---\nsecret content"
     )
 
-
-def test_to_prompt_deduplication(tmp_path):
-    # Create one skill directory
-    skill_dir = tmp_path / "skill"
+    # Create the skill directory
+    skill_dir = tmp_path / "my-skill"
     skill_dir.mkdir()
-    (skill_dir / "SKILL.md").write_text("---\nname: skill\ndescription: desc\n---\n")
 
-    # Pass the same skill directory multiple times, should not raise error
-    skill_dirs = [skill_dir] * (MAX_SKILLS_PER_PROMPT + 1)
-    result = to_prompt(skill_dirs)
-    assert result.count("<skill>") == 1
+    # Create a symlink named SKILL.md inside skill_dir pointing to the secret file outside
+    symlink_path = skill_dir / "SKILL.md"
+    try:
+        symlink_path.symlink_to(secret_file)
+    except OSError:
+        pytest.skip("Symlinks are not supported or not permitted on this platform")
 
+    # find_skill_md should return None because the resolved SKILL.md is outside skill_dir
+    assert find_skill_md(skill_dir) is None
 
-def test_error_message_sanitization(tmp_path):
-    # Test ANSI stripping and truncation in error messages
-    evil_name = "evil_\x1b[31mHACKED\x1b[0m_" + "A" * 200
-    evil_dir = tmp_path / evil_name
-    evil_dir.mkdir()
-    # Missing SKILL.md will trigger ParseError in read_properties
-
-    from skills_ref.parser import read_properties
-
-    with pytest.raises(ParseError) as excinfo:
-        read_properties(evil_dir)
-
-    err_msg = str(excinfo.value)
-    # Check for truncation (default 64 + "...")
-    assert len(err_msg) < 150
-    assert "..." in err_msg
-    # Check for ANSI stripping
-    assert "\x1b[31m" not in err_msg
-    assert "HACKED" in err_msg
+    # Consequently, read_properties should raise a ParseError
+    with pytest.raises(ParseError, match="SKILL.md not found in"):
+        read_properties(skill_dir)
 
 
-def test_metadata_key_sanitization():
-    # Test sanitization of metadata keys in ParseError.
-    # parse_frontmatter uses sanitize_error_text(key, max_len=100) for display;
-    # use a key longer than 100 chars to ensure truncation with "..." is triggered.
-    from skills_ref.constants import MAX_METADATA_KEY_LENGTH
+def test_skill_md_symlink_inside_dir(tmp_path):
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
 
-    long_key = "K" * (MAX_METADATA_KEY_LENGTH + 101)
-    content = f"---\nname: skill\ndescription: desc\n{long_key}: value\n---\nbody"
+    real_md = skill_dir / "REAL_SKILL.md"
+    real_md.write_text("---\nname: my-skill\ndescription: test\n---")
 
-    with pytest.raises(ParseError) as excinfo:
-        parse_frontmatter(content)
+    skill_md = skill_dir / "SKILL.md"
+    try:
+        skill_md.symlink_to(real_md)
+    except OSError:
+        pytest.skip("Symlinks are not supported or not permitted on this platform")
 
-    err_msg = str(excinfo.value)
-    assert len(err_msg) < 200
-    assert "..." in err_msg
-    assert long_key[:100] in err_msg
+    props = read_properties(skill_dir)
+    assert props.name == "my-skill"

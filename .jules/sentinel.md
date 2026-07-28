@@ -78,6 +78,21 @@
 **Learning:** Reflecting untrusted input in error messages is a common source of both information leakage and resource exhaustion. Even if the input itself is limited (e.g., to 4096 chars), concatenating multiple such inputs or including large library-generated error excerpts can create unexpectedly large payloads.
 **Prevention:** Always truncate untrusted data and external library error messages when including them in application-level exceptions or user-facing output.
 
+## 2026-07-14 - [Prompt Inflation via Unbounded Skill List]
+**Vulnerability:** The `to_prompt` function accepted an unbounded list of skill directories and processed all of them into the final XML output. An attacker could provide thousands of (potentially redundant) skill paths to cause "Prompt Inflation", exhausting the LLM's context window or causing DoS in the prompt generation service.
+**Learning:** Resource limits must be applied not just to individual items (like file size or field length) but also to collections of items. De-duplication is a critical step when processing paths that might be aliased or repeated to ensure limits are effectively applied to unique resources.
+**Prevention:** Enforce a hard limit on the number of unique items allowed in a collection (e.g., `MAX_SKILLS_PER_PROMPT`) and perform de-duplication (using `Path.resolve()`) before enforcing the limit.
+
+## 2025-06-25 - [ANSI Escape Code Injection & Log Bloat in Error Messages]
+**Vulnerability:** Untrusted inputs (skill names, directory names, metadata keys) were reflected directly into error messages without sanitization. This allowed for ANSI escape code injection (terminal manipulation/spoofing) and potential DoS via log bloat from extremely long strings.
+**Learning:** Error messages are often overlooked as an injection vector. Even internal "sanitized" outputs like CLI error messages must be strictly bounded when they include user-provided data.
+**Prevention:** Implement centralized sanitization helpers to strip ANSI codes and enforce strict length limits (e.g., 64 chars) on all untrusted data reflected in exceptions or logs.
+
+## 2024-05-18 - Type Confusion in API entrypoint DoS
+**Vulnerability:** Type confusion crash (DoS) triggered by bypassing parser to call `validate_metadata` directly with malformed metadata (e.g. non-dictionary structure or integer keys).
+**Learning:** Public API entrypoints, even if primarily consumed internally after parsing, must validate parameter types. Assuming only strings and dicts exist based on parser guarantees breaks when the API is invoked directly. Un-casted dictionary keys crashed sorting and string join operations.
+**Prevention:** Always explicitly validate root parameter structures (e.g., `isinstance(metadata, dict)`) at API entry boundaries, and proactively cast potentially untrusted dictionary keys to expected types (e.g., `str(k)`) before performing sequence operations like sort or join.
+
 ## 2026-01-13 - XSS via Unvalidated URL in JSX Components
 **Vulnerability:** Direct assignment of potentially untrusted data to href attributes in LogoCarousel.jsx and ClientShowcase.jsx without protocol validation.
 **Learning:** Assigning raw URL strings to href attributes on anchor tags (`<a>`) in React/JSX allows javascript: or data: URIs, leading to Cross-Site Scripting (XSS) if the client URL input can be influenced by users or external data. Protocol-relative URLs ("//...") must also be explicitly rejected as they redirect to attacker-controlled hosts over the page's own protocol.

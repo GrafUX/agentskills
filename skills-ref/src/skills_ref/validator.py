@@ -215,8 +215,7 @@ def validate_metadata(metadata: dict, skill_dir: Optional[Path] = None) -> list[
     errors = []
 
     if not isinstance(metadata, dict):
-        errors.append("Metadata must be a dictionary")
-        return errors
+        return ["SKILL.md frontmatter must be a YAML mapping"]
 
     errors.extend(_validate_metadata_fields(metadata))
 

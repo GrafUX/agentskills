@@ -4,6 +4,24 @@
   Defaults to shuffled order for fairness; toggle to switch to alphabetical.
 */}
 export const ClientShowcase = ({clients}) => {
+  const sanitizeUrl = (url) => {
+    if (!url) return '#';
+    const trimmed = url.trim();
+    const cleanOriginal = trimmed.replace(/[\x00-\x1F\x7F-\x9F\s]/g, "");
+    if (/^(?:javascript|data|vbscript):/i.test(cleanOriginal)) {
+      return '#';
+    }
+    try {
+      const decoded = decodeURIComponent(trimmed).replace(/[\x00-\x1F\x7F-\x9F\s]/g, "");
+      if (/^(?:javascript|data|vbscript):/i.test(decoded)) {
+        return '#';
+      }
+    } catch (e) {
+      // ignore
+    }
+    return url;
+  };
+
   const shuffle = (arr) => {
     const copy = arr.slice();
     for (let i = copy.length - 1; i > 0; i--) {
@@ -24,7 +42,7 @@ export const ClientShowcase = ({clients}) => {
   }, { mode: "shuffle", clients: shuffle(clients) });
 
   const Logo = ({ client }) => (
-    <a href={client.url} className="block no-underline border-none w-full h-full">
+    <a href={sanitizeUrl(client.url)} className="block no-underline border-none w-full h-full">
       <img className="block dark:hidden object-contain w-full h-full !my-0" src={client.lightSrc} alt={client.name} noZoom />
       <img className="hidden dark:block object-contain w-full h-full !my-0" src={client.darkSrc} alt={client.name} noZoom />
     </a>
@@ -58,18 +76,18 @@ export const ClientShowcase = ({clients}) => {
             <div className="mx-auto mb-1.5" style={{height: 80, width: 150 * (client.scale || 1)}}>
               <Logo client={client} />
             </div>
-            <div className="text-base font-semibold mb-1.5"><a href={client.url}>{client.name}</a></div>
+            <div className="text-base font-semibold mb-1.5"><a href={sanitizeUrl(client.url)}>{client.name}</a></div>
             <p className="text-sm text-gray-600 dark:text-gray-400 m-0 leading-normal flex-1">{client.description}</p>
             {(client.instructionsUrl || client.sourceCodeUrl) && (
               <div className="border-t border-gray-100 dark:border-gray-800 -mx-5 -mb-3 mt-3 px-5 py-3 bg-gray-50 dark:bg-gray-800/50 rounded-b-lg text-sm text-gray-500 dark:text-gray-400 flex flex-wrap gap-x-5 gap-y-1">
                 {client.instructionsUrl && (
                   <span className="whitespace-nowrap">
-                    <Icon icon="gear" size={14} /> <a href={client.instructionsUrl} className="text-gray-500 dark:text-gray-400">Setup instructions</a>
+                    <Icon icon="gear" size={14} /> <a href={sanitizeUrl(client.instructionsUrl)} className="text-gray-500 dark:text-gray-400">Setup instructions</a>
                   </span>
                 )}
                 {client.sourceCodeUrl && (
                   <span className="whitespace-nowrap">
-                    <Icon icon="code" size={14} /> <a href={client.sourceCodeUrl} className="text-gray-500 dark:text-gray-400">Source code</a>
+                    <Icon icon="code" size={14} /> <a href={sanitizeUrl(client.sourceCodeUrl)} className="text-gray-500 dark:text-gray-400">Source code</a>
                   </span>
                 )}
               </div>

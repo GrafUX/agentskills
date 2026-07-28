@@ -203,16 +203,26 @@ Body
     # Mock read_properties to return properties containing ANSI escapes and control characters
     def mock_read_properties(path):
         return SkillProperties(
-            name="ansi-\x1b[31mskill\x1b[0m",
-            description="Description with \x1b[31mcolor\x1b[0m and \x00control",
+            name="ansi-\x1b[31mskill\x1b[0m\nwith\nnewlines",
+            description="Description with \x1b[31mcolor\x1b[0m and \x00control\tcharacters\rhere",
             skill_md_path=path / "SKILL.md",
         )
 
     monkeypatch.setattr(skills_ref.prompt, "read_properties", mock_read_properties)
 
     result = to_prompt([skill_dir])
-    assert "ansi-skill" in result
+    assert "ansi-skill with newlines" in result
+    assert "Description with color and control characters here" in result
     assert "\x1b" not in result
-    assert "[31m" not in result
     assert "\x00" not in result
-    assert "Description with color and control" in result
+    assert "\r" not in result
+    assert "\t" not in result
+    assert "[31m" not in result
+
+    # Verify exact element contents to ensure no dangerous control chars exist
+    collapsed = result.replace("\n", "")
+    assert "<name>ansi-skill with newlines</name>" in collapsed
+    assert (
+        "<description>Description with color and control characters here</description>"
+        in collapsed
+    )

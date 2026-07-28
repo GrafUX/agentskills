@@ -57,9 +57,24 @@ def to_prompt(skill_dirs: list[Path]) -> str:
             props = read_properties(skill_dir)
             seen.add(skill_dir)
 
-            sanitized_name = _sanitize_error_text(props.name).replace("\n", " ").replace("\r", " ").replace("\t", " ")
-            sanitized_description = _sanitize_error_text(props.description).replace("\n", " ").replace("\r", " ").replace("\t", " ")
-            sanitized_path = _sanitize_error_text(str(props.skill_md_path)).replace("\n", " ").replace("\r", " ").replace("\t", " ")
+            sanitized_name = (
+                _sanitize_error_text(props.name)
+                .replace("\n", " ")
+                .replace("\r", " ")
+                .replace("\t", " ")
+            )
+            sanitized_description = (
+                _sanitize_error_text(props.description)
+                .replace("\n", " ")
+                .replace("\r", " ")
+                .replace("\t", " ")
+            )
+            sanitized_path = (
+                _sanitize_error_text(str(props.skill_md_path))
+                .replace("\n", " ")
+                .replace("\r", " ")
+                .replace("\t", " ")
+            )
 
             lines.append("<skill>")
             lines.append("<name>")

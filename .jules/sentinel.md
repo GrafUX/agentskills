@@ -116,3 +116,8 @@
 **Vulnerability:** In `parser.py`, the custom `metadata` dictionary values were blindly cast to strings using `str(v)`. If an attacker provided a deeply nested YAML structure (e.g., heavily nested dictionaries or lists), calling `str()` on the parsed structure could consume excessive CPU and memory, leading to a Denial of Service (DoS).
 **Learning:** `strictyaml` can parse structures into generic Python dicts/lists. Blindly calling string formatting or `str()` on untrusted, complex structures can be computationally expensive and dangerous.
 **Prevention:** Explicitly reject complex types (like `dict` or `list`) for metadata values before applying `str()`. Ensure that such generic fields only accept scalar values.
+
+## 2026-07-26 - [Log Injection via Unexpected Frontmatter Fields]
+**Vulnerability:** In `validator.py`, unexpected/extra frontmatter key names were reflected in validation error outputs using `_sanitize_error_text`. While `_sanitize_error_text` stripped ANSI sequences and non-printable control characters, it preserved raw newlines, carriage returns, and tabs. If an attacker supplied unexpected keys containing newlines, the resulting validation errors printed to logs or stdout would contain raw line breaks, leading to Log Injection/Forging.
+**Learning:** Using simple control-character sanitization filters like `_sanitize_error_text` without replacing whitespace line breaks (newlines, carriage returns) exposes log output consumers to injection/manipulation risks.
+**Prevention:** Always use a robust, comprehensive helper like `_safe_name` to sanitize untrusted strings and explicitly replace newlines, carriage returns, and tabs with spaces when interpolating them into error or log messages.

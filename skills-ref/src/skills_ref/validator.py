@@ -187,7 +187,7 @@ def _validate_metadata_fields(metadata: dict) -> list[str]:
 
     extra_fields = sorted(set(str(k) for k in metadata.keys()) - ALLOWED_FIELDS)
     if extra_fields:
-        sanitized_fields = [_safe_name(f, max_len=100) for f in extra_fields]
+        sanitized_fields = [_safe_name(field, max_len=100) for field in extra_fields]
         display_extra = ", ".join(sanitized_fields)
         if len(display_extra) > 500:
             display_extra = display_extra[:500] + "..."

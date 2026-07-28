@@ -139,11 +139,17 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
             raise ParseError(
                 f"Field 'metadata' exceeds {MAX_METADATA_KEYS_COUNT} keys limit"
             )
+
         sanitized_metadata = {}
         for k, v in metadata["metadata"].items():
-            if isinstance(v, (dict, list)):
+            if isinstance(k, (dict, list)):
                 raise ParseError(
-                    "Complex structures (dict/list) are not allowed in 'metadata' values"
+                    "Complex structures (dict/list) are not allowed in 'metadata' keys"
+                )
+            if isinstance(v, (dict, list)):
+                display_key = _safe_name(str(k), max_len=100)
+                raise ParseError(
+                    f"Complex structures are not allowed in metadata values: '{display_key}'"
                 )
             sanitized_metadata[str(k)] = str(v)
         metadata["metadata"] = sanitized_metadata

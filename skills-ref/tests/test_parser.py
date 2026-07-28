@@ -326,6 +326,48 @@ Body
         parse_frontmatter(content)
 
 
+def test_metadata_nested_dict_value_raises_parse_error():
+    """Nested dict as a metadata value must raise ParseError, not RecursionError."""
+    content = "---\nname: my-skill\ndescription: desc\nmetadata:\n  nested:\n    deep: value\n---\nBody\n"
+    with pytest.raises(ParseError, match="Complex structures"):
+        parse_frontmatter(content)
+
+
+def test_metadata_list_value_raises_parse_error():
+    """List as a metadata value must raise ParseError, not RecursionError."""
+    content = "---\nname: my-skill\ndescription: desc\nmetadata:\n  mylist:\n    - item1\n    - item2\n---\nBody\n"
+    with pytest.raises(ParseError, match="Complex structures"):
+        parse_frontmatter(content)
+
+
+def test_metadata_deeply_nested_value_raises_parse_error_not_recursion(monkeypatch):
+    """Deeply nested metadata value must raise ParseError and not RecursionError."""
+    import skills_ref.parser as parser_module
+
+    deeply_nested: dict = {}
+    node = deeply_nested
+    for _ in range(500):
+        node["x"] = {}
+        node = node["x"]
+
+    fake_data = type(
+        "FakeData",
+        (),
+        {
+            "data": {
+                "name": "my-skill",
+                "description": "desc",
+                "metadata": {"key": deeply_nested},
+            }
+        },
+    )()
+
+    monkeypatch.setattr(parser_module.strictyaml, "load", lambda *a, **kw: fake_data)
+    content = "---\nname: my-skill\ndescription: desc\n---\nbody"
+    with pytest.raises(ParseError, match="Complex structures"):
+        parse_frontmatter(content)
+
+
 def test_internal_parsing_error_is_sanitized(monkeypatch):
     """Non-YAMLError from strictyaml.load must produce a sanitized message."""
     import skills_ref.parser as parser_module

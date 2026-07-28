@@ -187,6 +187,21 @@ def read_properties(skill_dir: Path) -> SkillProperties:
 
     metadata, _ = parse_frontmatter(content)
 
+    return _validate_parsed_properties(metadata)
+
+
+def _validate_parsed_properties(metadata: dict) -> SkillProperties:
+    """Validate and construct properties from parsed metadata dictionary.
+
+    Args:
+        metadata: Parsed frontmatter dictionary
+
+    Returns:
+        SkillProperties with validated and sanitized properties
+
+    Raises:
+        ValidationError: If any property is invalid or missing required values
+    """
     if "name" not in metadata:
         raise ValidationError("Missing required field in frontmatter: name")
     if "description" not in metadata:

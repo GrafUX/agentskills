@@ -214,4 +214,5 @@ Body
     assert "ansi-skill" in result
     assert "\x1b" not in result
     assert "[31m" not in result
+    assert "\x00" not in result
     assert "Description with color and control" in result

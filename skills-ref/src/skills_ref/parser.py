@@ -134,11 +134,22 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
                 f"Frontmatter value for '{display_key}' exceeds {MAX_FRONTMATTER_VALUE_LENGTH} character limit"
             )
 
-    if "metadata" in metadata and isinstance(metadata["metadata"], dict):
+    for field in ("license", "allowed-tools", "compatibility"):
+        if field in metadata and not isinstance(metadata[field], str):
+            raise ParseError(f"Field '{field}' must be a string")
+
+    if "metadata" in metadata:
+        if not isinstance(metadata["metadata"], dict):
+            raise ParseError("Field 'metadata' must be a dictionary")
         if len(metadata["metadata"]) > MAX_METADATA_KEYS_COUNT:
             raise ParseError(
                 f"Field 'metadata' exceeds {MAX_METADATA_KEYS_COUNT} keys limit"
             )
+        for k, v in metadata["metadata"].items():
+            if isinstance(v, (dict, list)):
+                raise ParseError(
+                    "Field 'metadata' values cannot be a complex structure"
+                )
         metadata["metadata"] = {str(k): str(v) for k, v in metadata["metadata"].items()}
 
     return metadata, body

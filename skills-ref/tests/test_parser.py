@@ -371,3 +371,38 @@ def test_find_skill_md_handles_runtime_error(monkeypatch):
 
     result = find_skill_md(Path("/some/dummy/path"))
     assert result is None
+
+
+def test_parse_frontmatter_rejects_complex_values_for_license():
+    """parse_frontmatter should reject list or dict under 'license' field."""
+    content = """---
+name: my-skill
+description: desc
+license:
+  - MIT
+  - Apache
+---
+Body
+"""
+    with pytest.raises(
+        ParseError,
+        match="Complex structures \\(dict/list\\) are not allowed in frontmatter field 'license'",
+    ):
+        parse_frontmatter(content)
+
+
+def test_parse_frontmatter_rejects_complex_values_for_unexpected_fields():
+    """parse_frontmatter should reject list or dict under unexpected fields."""
+    content = """---
+name: my-skill
+description: desc
+unexpected_field:
+  key: value
+---
+Body
+"""
+    with pytest.raises(
+        ParseError,
+        match="Complex structures \\(dict/list\\) are not allowed in frontmatter field 'unexpected_field'",
+    ):
+        parse_frontmatter(content)

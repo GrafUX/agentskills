@@ -111,15 +111,7 @@
 **Vulnerability:** First, raw input whitespaces (like newlines, carriage returns, or tabs) reflected in exception/error messages could lead to log/terminal injection. Second, `find_skill_md` previously resolved and verified parent directory containment *only* if the target file was a symlink, which left potential OS-specific link behaviors or unhandled directory edge cases exposed.
 **Learning:** For robust defense-in-depth, validation/containment checks must run unconditionally (and check directory validity beforehand). However, unconditional resolution (via `Path.resolve()`) generates extra file system queries, meaning tests asserting exact call counts on `Path.resolve()` must be updated accordingly.
 **Prevention:** Replace newlines/tabs with spaces in error reflections. Ensure that directory validity is checked early (`is_dir()`) and that directory containment validation for file resolution is done unconditionally for all parsed paths.
-<<<<<<< HEAD
-## 2024-05-24 - [Stringification DoS via Custom Metadata]
-**Vulnerability:** Calling `str()` blindly on recursively parsed dictionaries (like custom user metadata in `metadata['metadata']`) can lead to a Denial of Service (DoS) if the nested structure hits recursion or maximum representation limits.
-**Learning:** `strictyaml` can parse nested data structures when relying on untyped mappings unless explicit schemas define restrictions. When generic untyped nested values are converted to string (`str(v)`), an attacker can supply a deeply nested tree to cause a memory/CPU DoS or Python recursion crash when the dictionary tries to resolve its representation.
-**Prevention:** For custom metadata fields where string values are expected, explicitly check and reject complex structures (`isinstance(v, (dict, list))`) *before* applying `str()` to prevent the stringification engine from trying to process large, deep structures.
-=======
-
 ## 2025-07-27 - [Stringification DoS via Complex Metadata]
-**Vulnerability:** In `parser.py`, the custom `metadata` dictionary values were blindly cast to strings using `str(v)`. If an attacker provided a deeply nested YAML structure (e.g., heavily nested dictionaries or lists), calling `str()` on the parsed structure could consume excessive CPU and memory, leading to a Denial of Service (DoS).
-**Learning:** `strictyaml` can parse structures into generic Python dicts/lists. Blindly calling string formatting or `str()` on untrusted, complex structures can be computationally expensive and dangerous.
-**Prevention:** Explicitly reject complex types (like `dict` or `list`) for metadata values before applying `str()`. Ensure that such generic fields only accept scalar values.
->>>>>>> origin/main
+**Vulnerability:** In `parser.py`, the custom `metadata` dictionary values were blindly cast to strings using `str(v)`. If an attacker provided a deeply nested YAML structure (e.g., heavily nested dictionaries or lists), calling `str()` on the parsed structure could consume excessive CPU and memory, leading to a Denial of Service (DoS). Complex YAML mapping keys (dicts/lists) carry the same risk if passed to `str()`.
+**Learning:** `strictyaml` can parse structures into generic Python dicts/lists. Blindly calling string formatting or `str()` on untrusted, complex structures can be computationally expensive and dangerous. Both keys and values of untrusted mappings must be validated before stringification.
+**Prevention:** Explicitly reject complex types (like `dict` or `list`) for metadata keys *and* values before applying `str()`. Ensure that such generic fields only accept scalar values.

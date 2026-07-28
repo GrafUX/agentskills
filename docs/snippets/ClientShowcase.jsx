@@ -24,12 +24,12 @@ export const ClientShowcase = ({clients}) => {
   }, { mode: "shuffle", clients: shuffle(clients) });
 
   const sanitizeUrl = (url) => {
-    if (!url) return '';
+    if (!url) return undefined;
     const trimmed = url.trim();
-    if (/^(https?:\/\/|\/)/i.test(trimmed)) {
+    if (/^(https?:\/\/|\/(?!\/))/i.test(trimmed)) {
       return trimmed;
     }
-    return '';
+    return undefined;
   };
 
   const Logo = ({ client }) => (

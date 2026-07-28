@@ -29,12 +29,12 @@ export const LogoCarousel = ({clients}) => {
   const cycleDuration = cycleWidth / PX_PER_SECOND;
 
   const sanitizeUrl = (url) => {
-    if (!url) return '';
+    if (!url) return undefined;
     const trimmed = url.trim();
-    if (/^(https?:\/\/|\/)/i.test(trimmed)) {
+    if (/^(https?:\/\/|\/(?!\/))/i.test(trimmed)) {
       return trimmed;
     }
-    return '';
+    return undefined;
   };
 
   const Logo = ({ client }) => (

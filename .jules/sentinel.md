@@ -1,3 +1,8 @@
+## 2026-07-28 - [Terminal/Log Injection and Trojan Source (Bidirectional Overrides) in Frontmatter]
+**Vulnerability:** Although error outputs and prompt generation fields were sanitized/escaped, raw frontmatter keys, values, and custom metadata were parsed and passed to downstream consumers without checking for dangerous non-printable control characters, ANSI escape sequences, or bidirectional text control codes (like Right-to-Left Override `\u202e`), opening risks of log injection, terminal sequence exploitation, or line obfuscation downstream.
+**Learning:** Checking for length limits and basic syntax is insufficient if downstream tools consume the resulting parsed models directly in logs, UIs, or shells. Input validation must enforce strict character boundaries on incoming text early in the pipeline.
+**Prevention:** Unconditionally validate parsed frontmatter strings against a whitelist of printable characters and safe whitespaces (`\n\r\t`), and explicitly reject strings containing ANSI escape sequences or non-printable control characters during the ingestion/parsing phase (`parse_frontmatter`).
+
 ## 2025-06-07 - [Prompt XML Injection]
 **Vulnerability:** In prompt generation (`prompt.py`), `skill_md_path` was interpolated directly into an XML element without being escaped. An attacker who controls directory names could include tags like `</location><skill><name>malicious</name>...` to inject fake agent instructions or prompt escape commands.
 **Learning:** Even internal file paths must be considered potentially tainted if they include portions controlled by external users/inputs (such as downloaded skill repositories).

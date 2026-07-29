@@ -86,6 +86,52 @@ def test_parser_error_uses_safe_name(tmp_path):
     assert "a" * 64 in error_str
 
 
+def test_parse_frontmatter_key_has_ansi():
+    """Test that ParseError is raised when a frontmatter key contains ANSI escapes or control characters."""
+    # Note: strictyaml might fail loading raw \x1b, so let's mock the parsed data to test parse_frontmatter validation
+    # when strictyaml successfully loads it but it contains control characters or is a control char itself.
+    content_with_bidi = (
+        "---\nname: my-skill\ndescription: test\n\u202ebad_key: some value\n---\nbody"
+    )
+    with pytest.raises(ParseError) as excinfo:
+        parse_frontmatter(content_with_bidi)
+    assert (
+        "Frontmatter keys cannot contain control characters or ANSI escape sequences"
+        in str(excinfo.value)
+    )
+
+
+def test_parse_frontmatter_value_has_ansi():
+    """Test that ParseError is raised when a frontmatter value contains control characters."""
+    content_with_bidi = "---\nname: my-skill\ndescription: \u202etest\n---\nbody"
+    with pytest.raises(ParseError) as excinfo:
+        parse_frontmatter(content_with_bidi)
+    assert "cannot contain control characters or ANSI escape sequences" in str(
+        excinfo.value
+    )
+
+
+def test_parse_frontmatter_metadata_key_has_ansi():
+    """Test that ParseError is raised when a custom metadata key contains control characters."""
+    content_with_bidi = "---\nname: my-skill\ndescription: test\nmetadata:\n  \u202ekey: value\n---\nbody"
+    with pytest.raises(ParseError) as excinfo:
+        parse_frontmatter(content_with_bidi)
+    assert (
+        "Metadata keys cannot contain control characters or ANSI escape sequences"
+        in str(excinfo.value)
+    )
+
+
+def test_parse_frontmatter_metadata_value_has_ansi():
+    """Test that ParseError is raised when a custom metadata value contains control characters."""
+    content_with_bidi = "---\nname: my-skill\ndescription: test\nmetadata:\n  key: \u202evalue\n---\nbody"
+    with pytest.raises(ParseError) as excinfo:
+        parse_frontmatter(content_with_bidi)
+    assert "cannot contain control characters or ANSI escape sequences" in str(
+        excinfo.value
+    )
+
+
 def test_validate_metadata_unexpected_field_sanitized():
     """Test that validate_metadata sanitizes unexpected metadata fields with ANSI and control sequences."""
     metadata = {

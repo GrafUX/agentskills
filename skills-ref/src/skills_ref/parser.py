@@ -45,6 +45,15 @@ def _safe_name(name: str, max_len: int = 64) -> str:
     return sanitized
 
 
+def _has_control_or_ansi(text: str) -> bool:
+    """Check if the string contains ANSI escape sequences or unprintable control characters."""
+    if not isinstance(text, str):
+        return False
+    if ANSI_ESCAPE.search(text):
+        return True
+    return any(not c.isprintable() and c not in "\n\r\t" for c in text)
+
+
 def find_skill_md(skill_dir: Path) -> Path | None:
     """Find the SKILL.md file in a skill directory.
 
@@ -128,6 +137,11 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
             raise ParseError(
                 f"Frontmatter key '{display_key}' exceeds {MAX_METADATA_KEY_LENGTH} character limit"
             )
+        if _has_control_or_ansi(key):
+            raise ParseError(
+                "Frontmatter keys cannot contain control characters or ANSI escape sequences"
+            )
+
         if key != "metadata" and isinstance(value, (dict, list)):
             display_key = _safe_name(key, max_len=100)
             raise ParseError(
@@ -137,6 +151,11 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
             display_key = _safe_name(key, max_len=100)
             raise ParseError(
                 f"Frontmatter value for '{display_key}' exceeds {MAX_FRONTMATTER_VALUE_LENGTH} character limit"
+            )
+        if isinstance(value, str) and _has_control_or_ansi(value):
+            display_key = _safe_name(key, max_len=100)
+            raise ParseError(
+                f"Frontmatter value for '{display_key}' cannot contain control characters or ANSI escape sequences"
             )
 
     if "metadata" in metadata and isinstance(metadata["metadata"], dict):
@@ -150,7 +169,18 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
                 raise ParseError(
                     "Complex structures (dict/list) are not allowed in 'metadata' values"
                 )
-            sanitized_metadata[str(k)] = str(v)
+            k_str = str(k)
+            v_str = str(v)
+            if _has_control_or_ansi(k_str):
+                raise ParseError(
+                    "Metadata keys cannot contain control characters or ANSI escape sequences"
+                )
+            if _has_control_or_ansi(v_str):
+                display_k = _safe_name(k_str, max_len=100)
+                raise ParseError(
+                    f"Metadata value for '{display_k}' cannot contain control characters or ANSI escape sequences"
+                )
+            sanitized_metadata[k_str] = v_str
         metadata["metadata"] = sanitized_metadata
 
     return metadata, body

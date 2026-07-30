@@ -45,6 +45,32 @@ def _safe_name(name: str, max_len: int = 64) -> str:
     return sanitized
 
 
+def _has_unprintable_or_trojan(text: str, allow_whitespace: bool = True) -> bool:
+    """Check if the text contains unprintable characters or Trojan Source/bidirectional overrides."""
+    if not isinstance(text, str):
+        return False
+    # Bidirectional override characters (Trojan Source)
+    bidi_chars = {
+        "\u202a",
+        "\u202b",
+        "\u202c",
+        "\u202d",
+        "\u202e",
+        "\u2066",
+        "\u2067",
+        "\u2068",
+        "\u2069",
+    }
+    for c in text:
+        if c in bidi_chars:
+            return True
+        if not c.isprintable():
+            if allow_whitespace and c in "\n\r\t":
+                continue
+            return True
+    return False
+
+
 def find_skill_md(skill_dir: Path) -> Path | None:
     """Find the SKILL.md file in a skill directory.
 
@@ -122,6 +148,12 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
         if not isinstance(key, str):
             raise ParseError("Frontmatter keys must be strings")
 
+        if _has_unprintable_or_trojan(key, allow_whitespace=False):
+            display_key = _safe_name(key, max_len=100)
+            raise ParseError(
+                f"Frontmatter key '{display_key}' contains unprintable or bidirectional control characters"
+            )
+
         len_key = len(key)
         if len_key > MAX_METADATA_KEY_LENGTH:
             display_key = _safe_name(key, max_len=100)
@@ -133,11 +165,17 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
             raise ParseError(
                 f"Complex structures (dict/list) are not allowed in frontmatter field '{display_key}'"
             )
-        if isinstance(value, str) and len(value) > MAX_FRONTMATTER_VALUE_LENGTH:
-            display_key = _safe_name(key, max_len=100)
-            raise ParseError(
-                f"Frontmatter value for '{display_key}' exceeds {MAX_FRONTMATTER_VALUE_LENGTH} character limit"
-            )
+        if isinstance(value, str):
+            if _has_unprintable_or_trojan(value, allow_whitespace=True):
+                display_key = _safe_name(key, max_len=100)
+                raise ParseError(
+                    f"Frontmatter value for '{display_key}' contains unprintable or bidirectional control characters"
+                )
+            if len(value) > MAX_FRONTMATTER_VALUE_LENGTH:
+                display_key = _safe_name(key, max_len=100)
+                raise ParseError(
+                    f"Frontmatter value for '{display_key}' exceeds {MAX_FRONTMATTER_VALUE_LENGTH} character limit"
+                )
 
     if "metadata" in metadata and isinstance(metadata["metadata"], dict):
         if len(metadata["metadata"]) > MAX_METADATA_KEYS_COUNT:
@@ -150,7 +188,19 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
                 raise ParseError(
                     "Complex structures (dict/list) are not allowed in 'metadata' values"
                 )
-            sanitized_metadata[str(k)] = str(v)
+            str_k = str(k)
+            str_v = str(v)
+            if _has_unprintable_or_trojan(str_k, allow_whitespace=False):
+                display_k = _safe_name(str_k, max_len=100)
+                raise ParseError(
+                    f"Metadata key '{display_k}' contains unprintable or bidirectional control characters"
+                )
+            if _has_unprintable_or_trojan(str_v, allow_whitespace=True):
+                display_k = _safe_name(str_k, max_len=100)
+                raise ParseError(
+                    f"Metadata value for '{display_k}' contains unprintable or bidirectional control characters"
+                )
+            sanitized_metadata[str_k] = str_v
         metadata["metadata"] = sanitized_metadata
 
     return metadata, body

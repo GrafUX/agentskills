@@ -86,6 +86,54 @@ def test_parser_error_uses_safe_name(tmp_path):
     assert "a" * 64 in error_str
 
 
+def test_parse_frontmatter_rejects_unprintable_or_trojan_keys():
+    """Test that parse_frontmatter rejects keys with unprintable characters or Trojan Source/bidirectional overrides."""
+    # Key containing RLO character
+    content = "---\nname\u202e: my-skill\ndescription: desc\n---\nbody"
+    with pytest.raises(
+        ParseError, match="contains unprintable or bidirectional control characters"
+    ):
+        parse_frontmatter(content)
+
+
+def test_parse_frontmatter_rejects_unprintable_or_trojan_values():
+    """Test that parse_frontmatter rejects string values containing Trojan Source/bidirectional overrides."""
+    # Description containing LRO character
+    content = "---\nname: my-skill\ndescription: desc\u202d\n---\nbody"
+    with pytest.raises(
+        ParseError, match="contains unprintable or bidirectional control characters"
+    ):
+        parse_frontmatter(content)
+
+
+def test_parse_frontmatter_allows_safe_whitespaces_in_values():
+    """Test that parse_frontmatter allows newlines, carriage returns, and tabs in values."""
+    content = (
+        '---\nname: my-skill\ndescription: "line1\\nline2\\rwith\\ttab"\n---\nbody'
+    )
+    metadata, body = parse_frontmatter(content)
+    assert metadata["name"] == "my-skill"
+    assert "line1\nline2\rwith\ttab" in metadata["description"]
+
+
+def test_parse_frontmatter_rejects_unprintable_or_trojan_metadata_keys():
+    """Test that parse_frontmatter rejects metadata dictionary keys containing bidirectional overrides."""
+    content = "---\nname: my-skill\ndescription: desc\nmetadata:\n  bad\u202ekey: value\n---\nbody"
+    with pytest.raises(
+        ParseError, match="contains unprintable or bidirectional control characters"
+    ):
+        parse_frontmatter(content)
+
+
+def test_parse_frontmatter_rejects_unprintable_or_trojan_metadata_values():
+    """Test that parse_frontmatter rejects metadata dictionary values containing bidirectional overrides."""
+    content = "---\nname: my-skill\ndescription: desc\nmetadata:\n  key: value\u202d\n---\nbody"
+    with pytest.raises(
+        ParseError, match="contains unprintable or bidirectional control characters"
+    ):
+        parse_frontmatter(content)
+
+
 def test_validate_metadata_unexpected_field_sanitized():
     """Test that validate_metadata sanitizes unexpected metadata fields with ANSI and control sequences."""
     metadata = {

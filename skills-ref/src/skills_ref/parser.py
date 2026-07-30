@@ -104,6 +104,7 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
         # on certain invalid inputs (e.g. AttributeError on unprintable characters)
         if isinstance(e, strictyaml.YAMLError):
             err_msg = _sanitize_error_text(str(e))
+            err_msg = err_msg.replace("\n", " ").replace("\r", " ").replace("\t", " ")
             if len(err_msg) > 1000:
                 err_msg = err_msg[:1000] + "..."
             raise ParseError(f"Invalid YAML in frontmatter: {err_msg}")

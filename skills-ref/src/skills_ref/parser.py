@@ -66,7 +66,7 @@ def find_skill_md(skill_dir: Path) -> Path | None:
                 resolved_path = path.resolve()
                 if resolved_dir not in resolved_path.parents:
                     return None
-                return path
+                return resolved_path
     except OSError:
         pass
     except RuntimeError:
@@ -187,8 +187,9 @@ def read_properties(skill_dir: Path) -> SkillProperties:
                     f"SKILL.md in {_safe_name(skill_dir.name)} exceeds 1MB size limit"
                 )
     except OSError as e:
+        error_msg = e.strerror or "Unknown OS error"
         raise ParseError(
-            f"Failed to read SKILL.md in {_safe_name(skill_dir.name)}: {e.strerror}"
+            f"Failed to read SKILL.md in {_safe_name(skill_dir.name)}: {error_msg}"
         )
     except UnicodeDecodeError:
         raise ParseError(f"SKILL.md in {_safe_name(skill_dir.name)} is not valid UTF-8")

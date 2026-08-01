@@ -416,3 +416,22 @@ Body
 """)
     errors = validate(skill_dir)
     assert any(f"exceeds {MAX_METADATA_KEYS_COUNT} keys limit" in e for e in errors)
+
+
+def test_validate_handles_oserror_with_no_strerror(tmp_path, monkeypatch):
+    """validate should fall back to 'Unknown OS error' when OSError has no strerror or is None."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("---name: dummy---")
+
+    # Mock open() to raise an OSError with strerror=None
+    def mock_open(*args, **kwargs):
+        e = OSError()
+        e.strerror = None
+        raise e
+
+    monkeypatch.setattr("builtins.open", mock_open)
+
+    errors = validate(skill_dir)
+    assert len(errors) == 1
+    assert "Unknown OS error" in errors[0]

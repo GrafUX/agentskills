@@ -187,8 +187,9 @@ def read_properties(skill_dir: Path) -> SkillProperties:
                     f"SKILL.md in {_safe_name(skill_dir.name)} exceeds 1MB size limit"
                 )
     except OSError as e:
+        err_msg = getattr(e, "strerror", None) or "Unknown OS error"
         raise ParseError(
-            f"Failed to read SKILL.md in {_safe_name(skill_dir.name)}: {e.strerror}"
+            f"Failed to read SKILL.md in {_safe_name(skill_dir.name)}: {err_msg}"
         )
     except UnicodeDecodeError:
         raise ParseError(f"SKILL.md in {_safe_name(skill_dir.name)} is not valid UTF-8")

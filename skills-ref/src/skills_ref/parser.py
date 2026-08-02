@@ -1,6 +1,7 @@
 """YAML frontmatter parsing for SKILL.md files."""
 
 import re
+from typing import Any
 from pathlib import Path
 
 import strictyaml
@@ -74,42 +75,18 @@ def find_skill_md(skill_dir: Path) -> Path | None:
     return None
 
 
-def parse_frontmatter(content: str) -> tuple[dict, str]:
-    """Parse YAML frontmatter from SKILL.md content.
+def _validate_frontmatter(metadata: Any) -> dict:
+    """Validate and sanitize parsed frontmatter dictionary.
 
     Args:
-        content: Raw content of SKILL.md file
+        metadata: The parsed YAML frontmatter (expected to be a dict)
 
     Returns:
-        Tuple of (metadata dict, markdown body)
+        The validated and sanitized metadata dictionary
 
     Raises:
-        ParseError: If frontmatter is missing or invalid
+        ParseError: If the frontmatter is invalid or exceeds limits
     """
-    if not content.startswith("---"):
-        raise ParseError("SKILL.md must start with YAML frontmatter (---)")
-
-    parts = content.split("---", 2)
-    if len(parts) < 3:
-        raise ParseError("SKILL.md frontmatter not properly closed with ---")
-
-    frontmatter_str = parts[1]
-    body = parts[2].strip()
-
-    try:
-        parsed = strictyaml.load(frontmatter_str)
-        metadata = parsed.data
-    except Exception as e:  # noqa: BLE001
-        # Catch all exceptions because strictyaml can raise non-YAMLError exceptions
-        # on certain invalid inputs (e.g. AttributeError on unprintable characters)
-        if isinstance(e, strictyaml.YAMLError):
-            err_msg = _sanitize_error_text(str(e))
-            if len(err_msg) > 1000:
-                err_msg = err_msg[:1000] + "..."
-            raise ParseError(f"Invalid YAML in frontmatter: {err_msg}")
-        else:
-            raise ParseError("Invalid YAML in frontmatter: Internal parsing error")
-
     if not isinstance(metadata, dict):
         raise ParseError("SKILL.md frontmatter must be a YAML mapping")
 
@@ -152,6 +129,47 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
                 )
             sanitized_metadata[str(k)] = str(v)
         metadata["metadata"] = sanitized_metadata
+
+    return metadata
+
+
+def parse_frontmatter(content: str) -> tuple[dict, str]:
+    """Parse YAML frontmatter from SKILL.md content.
+
+    Args:
+        content: Raw content of SKILL.md file
+
+    Returns:
+        Tuple of (metadata dict, markdown body)
+
+    Raises:
+        ParseError: If frontmatter is missing or invalid
+    """
+    if not content.startswith("---"):
+        raise ParseError("SKILL.md must start with YAML frontmatter (---)")
+
+    parts = content.split("---", 2)
+    if len(parts) < 3:
+        raise ParseError("SKILL.md frontmatter not properly closed with ---")
+
+    frontmatter_str = parts[1]
+    body = parts[2].strip()
+
+    try:
+        parsed = strictyaml.load(frontmatter_str)
+        metadata = parsed.data
+    except Exception as e:  # noqa: BLE001
+        # Catch all exceptions because strictyaml can raise non-YAMLError exceptions
+        # on certain invalid inputs (e.g. AttributeError on unprintable characters)
+        if isinstance(e, strictyaml.YAMLError):
+            err_msg = _sanitize_error_text(str(e))
+            if len(err_msg) > 1000:
+                err_msg = err_msg[:1000] + "..."
+            raise ParseError(f"Invalid YAML in frontmatter: {err_msg}")
+        else:
+            raise ParseError("Invalid YAML in frontmatter: Internal parsing error")
+
+    metadata = _validate_frontmatter(metadata)
 
     return metadata, body
 

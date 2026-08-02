@@ -3,6 +3,7 @@
 import pytest
 
 from skills_ref.parser import (
+    _validate_frontmatter,
     ParseError,
     ValidationError,
     find_skill_md,
@@ -305,25 +306,21 @@ Body
         read_properties(skill_dir)
 
 
-def test_parse_frontmatter_metadata_limit():
-    """parse_frontmatter should enforce metadata keys limit."""
+def test_validate_frontmatter_metadata_limit():
+    """_validate_frontmatter should enforce metadata keys limit."""
     from skills_ref.constants import MAX_METADATA_KEYS_COUNT
 
-    metadata_block = "\n".join(
-        [f"  key{i}: value{i}" for i in range(MAX_METADATA_KEYS_COUNT + 1)]
-    )
-    content = f"""---
-name: my-skill
-description: desc
-metadata:
-{metadata_block}
----
-Body
-"""
+    metadata = {
+        "name": "my-skill",
+        "description": "desc",
+        "metadata": {
+            f"key{i}": f"value{i}" for i in range(MAX_METADATA_KEYS_COUNT + 1)
+        },
+    }
     with pytest.raises(
         ParseError, match=rf"exceeds {MAX_METADATA_KEYS_COUNT} keys limit"
     ):
-        parse_frontmatter(content)
+        _validate_frontmatter(metadata)
 
 
 def test_internal_parsing_error_is_sanitized(monkeypatch):
@@ -373,36 +370,25 @@ def test_find_skill_md_handles_runtime_error(monkeypatch):
     assert result is None
 
 
-def test_parse_frontmatter_rejects_complex_values_for_license():
-    """parse_frontmatter should reject list or dict under 'license' field."""
-    content = """---
-name: my-skill
-description: desc
-license:
-  - MIT
-  - Apache
----
-Body
-"""
+def test_validate_frontmatter_rejects_complex_values_for_license():
+    """_validate_frontmatter should reject list or dict under 'license' field."""
+    metadata = {"name": "my-skill", "description": "desc", "license": ["MIT", "Apache"]}
     with pytest.raises(
         ParseError,
         match="Complex structures \\(dict/list\\) are not allowed in frontmatter field 'license'",
     ):
-        parse_frontmatter(content)
+        _validate_frontmatter(metadata)
 
 
-def test_parse_frontmatter_rejects_complex_values_for_unexpected_fields():
-    """parse_frontmatter should reject list or dict under unexpected fields."""
-    content = """---
-name: my-skill
-description: desc
-unexpected_field:
-  key: value
----
-Body
-"""
+def test_validate_frontmatter_rejects_complex_values_for_unexpected_fields():
+    """_validate_frontmatter should reject list or dict under unexpected fields."""
+    metadata = {
+        "name": "my-skill",
+        "description": "desc",
+        "unexpected_field": {"key": "value"},
+    }
     with pytest.raises(
         ParseError,
         match="Complex structures \\(dict/list\\) are not allowed in frontmatter field 'unexpected_field'",
     ):
-        parse_frontmatter(content)
+        _validate_frontmatter(metadata)

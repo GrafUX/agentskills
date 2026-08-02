@@ -86,6 +86,26 @@ def test_parser_error_uses_safe_name(tmp_path):
     assert "a" * 64 in error_str
 
 
+def test_safe_name_raw_limit_and_early_truncation():
+    """Test that safe_name truncates raw input early to prevent DoS on massive strings."""
+    # A massive string (e.g., 100,000 chars)
+    massive_name = "b" * 100000
+    safe = _safe_name(massive_name, max_len=64)
+    assert len(safe) == 67  # 64 + len("...")
+    assert safe == "b" * 64 + "..."
+
+
+def test_validate_name_fail_fast_length():
+    """Test that _validate_name handles extremely long names gracefully and returns early."""
+    massive_name = "a" * 100000
+    errors = validate_metadata({"name": massive_name, "description": "valid desc"})
+    assert len(errors) == 1
+    assert "exceeds" in errors[0]
+    # Check that the reflected name in the error message is truncated
+    assert "..." in errors[0]
+    assert len(errors[0]) < 200
+
+
 def test_validate_metadata_unexpected_field_sanitized():
     """Test that validate_metadata sanitizes unexpected metadata fields with ANSI and control sequences."""
     metadata = {

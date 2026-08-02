@@ -39,6 +39,20 @@ def _validate_name(name: str, skill_dir: Path) -> list[str]:
         errors.append("Field 'name' must be a non-empty string")
         return errors
 
+    # Check length FIRST before executing expensive unicodedata.normalize
+    if len(name) > MAX_SKILL_NAME_LENGTH:
+        display_name = (
+            _safe_name(name, max_len=100)
+            .replace("\n", " ")
+            .replace("\r", " ")
+            .replace("\t", " ")
+        )
+        errors.append(
+            f"Skill name '{display_name}' exceeds {MAX_SKILL_NAME_LENGTH} character limit "
+            f"({len(name)} chars)"
+        )
+        return errors
+
     name = unicodedata.normalize("NFKC", name.strip())
 
     display_name = (
@@ -47,11 +61,6 @@ def _validate_name(name: str, skill_dir: Path) -> list[str]:
         .replace("\r", " ")
         .replace("\t", " ")
     )
-    if len(name) > MAX_SKILL_NAME_LENGTH:
-        errors.append(
-            f"Skill name '{display_name}' exceeds {MAX_SKILL_NAME_LENGTH} character limit "
-            f"({len(name)} chars)"
-        )
 
     if name != name.lower():
         errors.append(f"Skill name '{display_name}' must be lowercase")

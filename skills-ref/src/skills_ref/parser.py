@@ -37,6 +37,10 @@ def _safe_name(name: str, max_len: int = 64) -> str:
     """Sanitize and truncate untrusted strings (like directory names or inputs) reflected in error messages."""
     if not name:
         return ""
+    # Defense-in-depth: limit raw input length first to prevent CPU/memory exhaustion during sanitization
+    raw_limit = max_len + 128
+    if len(name) > raw_limit:
+        name = name[:raw_limit]
     sanitized = _sanitize_error_text(name).strip()
     # Replace newline, carriage return, and tab characters with spaces to prevent log/terminal injection
     sanitized = sanitized.replace("\n", " ").replace("\r", " ").replace("\t", " ")
@@ -103,7 +107,10 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
         # Catch all exceptions because strictyaml can raise non-YAMLError exceptions
         # on certain invalid inputs (e.g. AttributeError on unprintable characters)
         if isinstance(e, strictyaml.YAMLError):
-            err_msg = _sanitize_error_text(str(e))
+            raw_err_msg = str(e)
+            if len(raw_err_msg) > 1000:
+                raw_err_msg = raw_err_msg[:1000]
+            err_msg = _sanitize_error_text(raw_err_msg)
             if len(err_msg) > 1000:
                 err_msg = err_msg[:1000] + "..."
             raise ParseError(f"Invalid YAML in frontmatter: {err_msg}")

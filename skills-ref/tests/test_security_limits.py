@@ -101,3 +101,77 @@ def test_skill_md_symlink_inside_dir(tmp_path):
 
     props = read_properties(skill_dir)
     assert props.name == "my-skill"
+
+
+def test_validate_name_fail_fast_limits(monkeypatch):
+    from skills_ref.validator import validate_metadata
+    from skills_ref.constants import MAX_SKILL_NAME_LENGTH
+    import unicodedata
+
+    normalize_called = False
+    original_normalize = unicodedata.normalize
+
+    def mock_normalize(*args, **kwargs):
+        nonlocal normalize_called
+        normalize_called = True
+        return original_normalize(*args, **kwargs)
+
+    monkeypatch.setattr(unicodedata, "normalize", mock_normalize)
+
+    # Long name exceeding MAX_SKILL_NAME_LENGTH
+    long_name = "a" * (MAX_SKILL_NAME_LENGTH + 1)
+    metadata = {
+        "name": long_name,
+        "description": "test desc",
+    }
+
+    errors = validate_metadata(metadata)
+    assert len(errors) > 0
+    assert any("exceeds" in err and "character limit" in err for err in errors)
+    assert not normalize_called, (
+        "unicodedata.normalize was called on an oversized name!"
+    )
+
+
+def test_read_properties_oserror_without_strerror(tmp_path, monkeypatch):
+    from skills_ref.parser import read_properties
+    from skills_ref.errors import ParseError
+    import builtins
+
+    skill_dir = tmp_path / "test-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("---\nname: test-skill\ndescription: desc\n---")
+
+    def mock_open(*args, **kwargs):
+        err = OSError("Something bad happened")
+        err.strerror = None
+        raise err
+
+    monkeypatch.setattr(builtins, "open", mock_open)
+
+    with pytest.raises(ParseError) as exc_info:
+        read_properties(skill_dir)
+
+    assert "Failed to read SKILL.md in test-skill: Unknown OS error" in str(
+        exc_info.value
+    )
+
+
+def test_validate_oserror_without_strerror(tmp_path, monkeypatch):
+    from skills_ref.validator import validate
+    import builtins
+
+    skill_dir = tmp_path / "test-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("---\nname: test-skill\ndescription: desc\n---")
+
+    def mock_open(*args, **kwargs):
+        err = OSError("Something bad happened")
+        err.strerror = None
+        raise err
+
+    monkeypatch.setattr(builtins, "open", mock_open)
+
+    errors = validate(skill_dir)
+    assert len(errors) == 1
+    assert "Failed to read SKILL.md in test-skill: Unknown OS error" in errors[0]

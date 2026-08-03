@@ -39,7 +39,21 @@ def _validate_name(name: str, skill_dir: Path) -> list[str]:
         errors.append("Field 'name' must be a non-empty string")
         return errors
 
-    name = unicodedata.normalize("NFKC", name.strip())
+    stripped_name = name.strip()
+    if len(stripped_name) > MAX_SKILL_NAME_LENGTH:
+        display_name = (
+            _safe_name(stripped_name, max_len=100)
+            .replace("\n", " ")
+            .replace("\r", " ")
+            .replace("\t", " ")
+        )
+        errors.append(
+            f"Skill name '{display_name}' exceeds {MAX_SKILL_NAME_LENGTH} character limit "
+            f"({len(stripped_name)} chars)"
+        )
+        return errors
+
+    name = unicodedata.normalize("NFKC", stripped_name)
 
     display_name = (
         _safe_name(name, max_len=100)
@@ -47,11 +61,6 @@ def _validate_name(name: str, skill_dir: Path) -> list[str]:
         .replace("\r", " ")
         .replace("\t", " ")
     )
-    if len(name) > MAX_SKILL_NAME_LENGTH:
-        errors.append(
-            f"Skill name '{display_name}' exceeds {MAX_SKILL_NAME_LENGTH} character limit "
-            f"({len(name)} chars)"
-        )
 
     if name != name.lower():
         errors.append(f"Skill name '{display_name}' must be lowercase")
@@ -275,9 +284,8 @@ def validate(skill_dir: Path) -> list[str]:
                 ]
         metadata, _ = parse_frontmatter(content)
     except OSError as e:
-        return [
-            f"Failed to read SKILL.md in {_safe_name(skill_dir.name)}: {e.strerror}"
-        ]
+        error_msg = e.strerror or "Unknown OS error"
+        return [f"Failed to read SKILL.md in {_safe_name(skill_dir.name)}: {error_msg}"]
     except UnicodeDecodeError:
         return [f"SKILL.md in {_safe_name(skill_dir.name)} is not valid UTF-8"]
     except ParseError as e:

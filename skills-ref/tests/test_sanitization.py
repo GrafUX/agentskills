@@ -86,6 +86,55 @@ def test_parser_error_uses_safe_name(tmp_path):
     assert "a" * 64 in error_str
 
 
+def test_read_properties_oserror_without_strerror(tmp_path, monkeypatch):
+    """Test that read_properties uses fallback message when OSError has no strerror."""
+    skill_dir = tmp_path / "test-skill"
+    skill_dir.mkdir()
+
+    import builtins
+
+    original_open = builtins.open
+
+    def mock_open(*args, **kwargs):
+        if "SKILL.md" in str(args[0]):
+            raise OSError()  # raised without args, strerror is None
+        return original_open(*args, **kwargs)
+
+    # We need a SKILL.md file to exist so find_skill_md returns it
+    (skill_dir / "SKILL.md").write_text("dummy")
+
+    monkeypatch.setattr(builtins, "open", mock_open)
+
+    with pytest.raises(ParseError) as exc_info:
+        read_properties(skill_dir)
+
+    assert "Unknown OS error" in str(exc_info.value)
+
+
+def test_validate_oserror_without_strerror(tmp_path, monkeypatch):
+    """Test that validate uses fallback message when OSError has no strerror."""
+    skill_dir = tmp_path / "test-skill"
+    skill_dir.mkdir()
+
+    import builtins
+
+    original_open = builtins.open
+
+    def mock_open(*args, **kwargs):
+        if "SKILL.md" in str(args[0]):
+            err = OSError(2, "")
+            raise err
+        return original_open(*args, **kwargs)
+
+    (skill_dir / "SKILL.md").write_text("dummy")
+
+    monkeypatch.setattr(builtins, "open", mock_open)
+
+    errors = validate(skill_dir)
+    assert len(errors) == 1
+    assert "Unknown OS error" in errors[0]
+
+
 def test_validate_metadata_unexpected_field_sanitized():
     """Test that validate_metadata sanitizes unexpected metadata fields with ANSI and control sequences."""
     metadata = {

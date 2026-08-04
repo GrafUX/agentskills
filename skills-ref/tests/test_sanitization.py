@@ -202,3 +202,27 @@ def test_prompt_error_uses_safe_name(tmp_path, monkeypatch):
     assert "\x1b" not in error_str
     assert "..." in error_str
     assert "a" * 64 in error_str
+
+
+def test_parse_frontmatter_yaml_error_crlf_sanitized(monkeypatch):
+    """Test that YAMLError messages with CRLF are sanitized in parse_frontmatter."""
+    import strictyaml
+
+    class MockYAMLError(strictyaml.YAMLError):
+        def __str__(self):
+            return "line 1\nline 2\rline 3\tline 4"
+
+    def mock_load(*args, **kwargs):
+        raise MockYAMLError()
+
+    monkeypatch.setattr("strictyaml.load", mock_load)
+
+    with pytest.raises(ParseError) as exc_info:
+        parse_frontmatter("---\nfoo: bar\n---\nbody")
+
+    error_str = str(exc_info.value)
+    assert "Invalid YAML in frontmatter:" in error_str
+    assert "\n" not in error_str
+    assert "\r" not in error_str
+    assert "\t" not in error_str
+    assert "line 1 line 2 line 3 line 4" in error_str

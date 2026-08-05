@@ -5,7 +5,7 @@ from pathlib import Path
 
 from .constants import MAX_SKILLS_PER_PROMPT
 from .errors import SkillError
-from .parser import read_properties, _safe_name, _sanitize_error_text
+from .parser import read_properties, _safe_name, _sanitize_error_text, WHITESPACE_TRANS
 
 
 def to_prompt(skill_dirs: list[Path]) -> str:
@@ -57,23 +57,14 @@ def to_prompt(skill_dirs: list[Path]) -> str:
             props = read_properties(skill_dir)
             seen.add(skill_dir)
 
-            sanitized_name = (
-                _sanitize_error_text(props.name)
-                .replace("\n", " ")
-                .replace("\r", " ")
-                .replace("\t", " ")
+            sanitized_name = _sanitize_error_text(props.name).translate(
+                WHITESPACE_TRANS
             )
-            sanitized_description = (
-                _sanitize_error_text(props.description)
-                .replace("\n", " ")
-                .replace("\r", " ")
-                .replace("\t", " ")
+            sanitized_description = _sanitize_error_text(props.description).translate(
+                WHITESPACE_TRANS
             )
-            sanitized_path = (
-                _sanitize_error_text(str(props.skill_md_path))
-                .replace("\n", " ")
-                .replace("\r", " ")
-                .replace("\t", " ")
+            sanitized_path = _sanitize_error_text(str(props.skill_md_path)).translate(
+                WHITESPACE_TRANS
             )
 
             lines.append("<skill>")

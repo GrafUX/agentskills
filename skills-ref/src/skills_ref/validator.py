@@ -39,6 +39,20 @@ def _validate_name(name: str, skill_dir: Path) -> list[str]:
         errors.append("Field 'name' must be a non-empty string")
         return errors
 
+    # Fail fast if name exceeds limit before performing potentially expensive Unicode normalization
+    if len(name) > MAX_SKILL_NAME_LENGTH:
+        display_name = (
+            _safe_name(name, max_len=100)
+            .replace("\n", " ")
+            .replace("\r", " ")
+            .replace("\t", " ")
+        )
+        errors.append(
+            f"Skill name '{display_name}' exceeds {MAX_SKILL_NAME_LENGTH} character limit "
+            f"({len(name)} chars)"
+        )
+        return errors
+
     name = unicodedata.normalize("NFKC", name.strip())
 
     display_name = (
@@ -275,9 +289,8 @@ def validate(skill_dir: Path) -> list[str]:
                 ]
         metadata, _ = parse_frontmatter(content)
     except OSError as e:
-        return [
-            f"Failed to read SKILL.md in {_safe_name(skill_dir.name)}: {e.strerror}"
-        ]
+        err_msg = getattr(e, "strerror", None) or "Unknown OS error"
+        return [f"Failed to read SKILL.md in {_safe_name(skill_dir.name)}: {err_msg}"]
     except UnicodeDecodeError:
         return [f"SKILL.md in {_safe_name(skill_dir.name)} is not valid UTF-8"]
     except ParseError as e:

@@ -86,6 +86,43 @@ def test_parser_error_uses_safe_name(tmp_path):
     assert "a" * 64 in error_str
 
 
+def test_parse_frontmatter_rejects_ansi_key():
+    """Test that parse_frontmatter rejects frontmatter containing ANSI in keys."""
+    content = "---\nname\x1b[31mred\x1b[0m: valid-name\ndescription: desc\n---\nbody"
+    with pytest.raises(ParseError) as exc_info:
+        parse_frontmatter(content)
+    assert "contains invalid or dangerous control characters" in str(exc_info.value)
+
+
+def test_parse_frontmatter_rejects_control_char_key():
+    """Test that parse_frontmatter rejects frontmatter containing unprintable control characters in keys."""
+    content = "---\nname\u202e: valid-name\ndescription: desc\n---\nbody"
+    with pytest.raises(ParseError) as exc_info:
+        parse_frontmatter(content)
+    assert "contains invalid or dangerous control characters" in str(exc_info.value)
+
+
+def test_parse_frontmatter_rejects_ansi_value():
+    """Test that parse_frontmatter rejects frontmatter containing ANSI in values."""
+    content = "---\nname: valid-name\ndescription: desc\ncompatibility: test\u202eval\n---\nbody"
+    with pytest.raises(ParseError) as exc_info:
+        parse_frontmatter(content)
+    assert "contains invalid or dangerous control characters" in str(exc_info.value)
+
+
+def test_parse_frontmatter_rejects_dangerous_custom_metadata():
+    """Test that parse_frontmatter rejects dangerous control characters in custom metadata keys and values."""
+    content_key = "---\nname: valid-name\ndescription: desc\nmetadata:\n  key\u202e: value\n---\nbody"
+    with pytest.raises(ParseError) as exc_info:
+        parse_frontmatter(content_key)
+    assert "contains invalid or dangerous control characters" in str(exc_info.value)
+
+    content_value = "---\nname: valid-name\ndescription: desc\nmetadata:\n  key: value\u202e\n---\nbody"
+    with pytest.raises(ParseError) as exc_info:
+        parse_frontmatter(content_value)
+    assert "contains invalid or dangerous control characters" in str(exc_info.value)
+
+
 def test_validate_metadata_unexpected_field_sanitized():
     """Test that validate_metadata sanitizes unexpected metadata fields with ANSI and control sequences."""
     metadata = {

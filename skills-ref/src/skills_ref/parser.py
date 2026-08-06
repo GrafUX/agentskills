@@ -33,6 +33,18 @@ def _sanitize_error_text(text: str) -> str:
     return text
 
 
+def _contains_dangerous_chars(text: str) -> bool:
+    """Check if a string contains ANSI escape sequences or unprintable control characters.
+
+    Allows safe whitespaces like \n, \r, and \t.
+    """
+    if not isinstance(text, str):
+        return False
+    if ANSI_ESCAPE.search(text):
+        return True
+    return any(not c.isprintable() and c not in "\n\r\t" for c in text)
+
+
 def _safe_name(name: str, max_len: int = 64) -> str:
     """Sanitize and truncate untrusted strings (like directory names or inputs) reflected in error messages."""
     if not name:
@@ -96,6 +108,11 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
     frontmatter_str = parts[1]
     body = parts[2].strip()
 
+    if _contains_dangerous_chars(frontmatter_str):
+        raise ParseError(
+            "Invalid YAML in frontmatter: contains invalid or dangerous control characters"
+        )
+
     try:
         parsed = strictyaml.load(frontmatter_str)
         metadata = parsed.data
@@ -122,6 +139,14 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
         if not isinstance(key, str):
             raise ParseError("Frontmatter keys must be strings")
 
+        # Reject keys containing raw ANSI escape sequences or unprintable control characters
+        # to prevent downstream terminal/log injection and Trojan Source (bidirectional override) attacks.
+        if _contains_dangerous_chars(key):
+            display_key = _safe_name(key, max_len=100)
+            raise ParseError(
+                f"Frontmatter key '{display_key}' contains invalid or dangerous control characters"
+            )
+
         len_key = len(key)
         if len_key > MAX_METADATA_KEY_LENGTH:
             display_key = _safe_name(key, max_len=100)
@@ -133,11 +158,18 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
             raise ParseError(
                 f"Complex structures (dict/list) are not allowed in frontmatter field '{display_key}'"
             )
-        if isinstance(value, str) and len(value) > MAX_FRONTMATTER_VALUE_LENGTH:
-            display_key = _safe_name(key, max_len=100)
-            raise ParseError(
-                f"Frontmatter value for '{display_key}' exceeds {MAX_FRONTMATTER_VALUE_LENGTH} character limit"
-            )
+        if isinstance(value, str):
+            # Reject values containing raw ANSI escape sequences or unprintable control characters.
+            if _contains_dangerous_chars(value):
+                display_key = _safe_name(key, max_len=100)
+                raise ParseError(
+                    f"Frontmatter value for '{display_key}' contains invalid or dangerous control characters"
+                )
+            if len(value) > MAX_FRONTMATTER_VALUE_LENGTH:
+                display_key = _safe_name(key, max_len=100)
+                raise ParseError(
+                    f"Frontmatter value for '{display_key}' exceeds {MAX_FRONTMATTER_VALUE_LENGTH} character limit"
+                )
 
     if "metadata" in metadata and isinstance(metadata["metadata"], dict):
         if len(metadata["metadata"]) > MAX_METADATA_KEYS_COUNT:
@@ -150,7 +182,20 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
                 raise ParseError(
                     "Complex structures (dict/list) are not allowed in 'metadata' values"
                 )
-            sanitized_metadata[str(k)] = str(v)
+            str_k = str(k)
+            str_v = str(v)
+            # Reject metadata keys/values containing raw ANSI escape sequences or unprintable control characters.
+            if _contains_dangerous_chars(str_k):
+                display_k = _safe_name(str_k, max_len=100)
+                raise ParseError(
+                    f"Metadata key '{display_k}' contains invalid or dangerous control characters"
+                )
+            if _contains_dangerous_chars(str_v):
+                display_k = _safe_name(str_k, max_len=100)
+                raise ParseError(
+                    f"Metadata value for '{display_k}' contains invalid or dangerous control characters"
+                )
+            sanitized_metadata[str_k] = str_v
         metadata["metadata"] = sanitized_metadata
 
     return metadata, body

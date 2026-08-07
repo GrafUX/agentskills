@@ -406,3 +406,24 @@ Body
         match="Complex structures \\(dict/list\\) are not allowed in frontmatter field 'unexpected_field'",
     ):
         parse_frontmatter(content)
+
+
+def test_read_properties_handles_oserror_without_strerror(monkeypatch, tmp_path):
+    """read_properties should handle OSError without strerror gracefully and fallback to 'Unknown OS error'."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text(
+        "---\nname: my-skill\ndescription: desc\n---\nbody"
+    )
+
+    def mock_open(*args, **kwargs):
+        raise OSError("Permission denied but strerror is None")
+
+    import builtins
+
+    monkeypatch.setattr(builtins, "open", mock_open)
+
+    with pytest.raises(
+        ParseError, match="Failed to read SKILL.md in my-skill: Unknown OS error"
+    ):
+        read_properties(skill_dir)

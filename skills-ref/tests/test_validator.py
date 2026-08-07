@@ -416,3 +416,23 @@ Body
 """)
     errors = validate(skill_dir)
     assert any(f"exceeds {MAX_METADATA_KEYS_COUNT} keys limit" in e for e in errors)
+
+
+def test_validate_handles_oserror_without_strerror(monkeypatch, tmp_path):
+    """validate should handle OSError without strerror gracefully and fallback to 'Unknown OS error'."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text(
+        "---\nname: my-skill\ndescription: desc\n---\nbody"
+    )
+
+    def mock_open(*args, **kwargs):
+        raise OSError("Permission denied but strerror is None")
+
+    import builtins
+
+    monkeypatch.setattr(builtins, "open", mock_open)
+
+    errors = validate(skill_dir)
+    assert len(errors) == 1
+    assert "Failed to read SKILL.md in my-skill: Unknown OS error" in errors[0]

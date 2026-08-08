@@ -275,9 +275,8 @@ def validate(skill_dir: Path) -> list[str]:
                 ]
         metadata, _ = parse_frontmatter(content)
     except OSError as e:
-        return [
-            f"Failed to read SKILL.md in {_safe_name(skill_dir.name)}: {e.strerror}"
-        ]
+        err_msg = getattr(e, "strerror", None) or "Unknown OS error"
+        return [f"Failed to read SKILL.md in {_safe_name(skill_dir.name)}: {err_msg}"]
     except UnicodeDecodeError:
         return [f"SKILL.md in {_safe_name(skill_dir.name)} is not valid UTF-8"]
     except ParseError as e:

@@ -74,6 +74,21 @@ def find_skill_md(skill_dir: Path) -> Path | None:
     return None
 
 
+def _has_invalid_chars(text: str) -> bool:
+    """Check if the text contains ANSI escape sequences or unprintable control characters
+
+    (excluding safe whitespaces like \n, \r, \t).
+    """
+    if not isinstance(text, str):
+        return False
+    if ANSI_ESCAPE.search(text):
+        return True
+    for c in text:
+        if c not in "\n\r\t" and not c.isprintable():
+            return True
+    return False
+
+
 def parse_frontmatter(content: str) -> tuple[dict, str]:
     """Parse YAML frontmatter from SKILL.md content.
 
@@ -122,6 +137,12 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
         if not isinstance(key, str):
             raise ParseError("Frontmatter keys must be strings")
 
+        if _has_invalid_chars(key):
+            display_key = _safe_name(key, max_len=100)
+            raise ParseError(
+                f"Frontmatter key '{display_key}' contains invalid characters"
+            )
+
         len_key = len(key)
         if len_key > MAX_METADATA_KEY_LENGTH:
             display_key = _safe_name(key, max_len=100)
@@ -133,11 +154,17 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
             raise ParseError(
                 f"Complex structures (dict/list) are not allowed in frontmatter field '{display_key}'"
             )
-        if isinstance(value, str) and len(value) > MAX_FRONTMATTER_VALUE_LENGTH:
-            display_key = _safe_name(key, max_len=100)
-            raise ParseError(
-                f"Frontmatter value for '{display_key}' exceeds {MAX_FRONTMATTER_VALUE_LENGTH} character limit"
-            )
+        if isinstance(value, str):
+            if _has_invalid_chars(value):
+                display_key = _safe_name(key, max_len=100)
+                raise ParseError(
+                    f"Frontmatter value for '{display_key}' contains invalid characters"
+                )
+            if len(value) > MAX_FRONTMATTER_VALUE_LENGTH:
+                display_key = _safe_name(key, max_len=100)
+                raise ParseError(
+                    f"Frontmatter value for '{display_key}' exceeds {MAX_FRONTMATTER_VALUE_LENGTH} character limit"
+                )
 
     if "metadata" in metadata and isinstance(metadata["metadata"], dict):
         if len(metadata["metadata"]) > MAX_METADATA_KEYS_COUNT:
@@ -149,6 +176,18 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
             if isinstance(v, (dict, list)):
                 raise ParseError(
                     "Complex structures (dict/list) are not allowed in 'metadata' values"
+                )
+            if not isinstance(k, str):
+                raise ParseError("Metadata keys must be strings")
+            if _has_invalid_chars(k):
+                display_k = _safe_name(k, max_len=100)
+                raise ParseError(
+                    f"Metadata key '{display_k}' contains invalid characters"
+                )
+            if _has_invalid_chars(str(v)):
+                display_k = _safe_name(k, max_len=100)
+                raise ParseError(
+                    f"Metadata value for '{display_k}' contains invalid characters"
                 )
             sanitized_metadata[str(k)] = str(v)
         metadata["metadata"] = sanitized_metadata
@@ -187,8 +226,9 @@ def read_properties(skill_dir: Path) -> SkillProperties:
                     f"SKILL.md in {_safe_name(skill_dir.name)} exceeds 1MB size limit"
                 )
     except OSError as e:
+        err_msg = getattr(e, "strerror", None) or "Unknown OS error"
         raise ParseError(
-            f"Failed to read SKILL.md in {_safe_name(skill_dir.name)}: {e.strerror}"
+            f"Failed to read SKILL.md in {_safe_name(skill_dir.name)}: {err_msg}"
         )
     except UnicodeDecodeError:
         raise ParseError(f"SKILL.md in {_safe_name(skill_dir.name)} is not valid UTF-8")

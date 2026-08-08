@@ -86,6 +86,98 @@ def test_parser_error_uses_safe_name(tmp_path):
     assert "a" * 64 in error_str
 
 
+def test_parse_frontmatter_invalid_chars_key(monkeypatch):
+    """Test that parse_frontmatter raises ParseError for keys with invalid characters."""
+
+    class MockParsed:
+        def __init__(self):
+            self.data = {"bad\x1bkey": "value"}
+
+    monkeypatch.setattr("strictyaml.load", lambda *args, **kwargs: MockParsed())
+
+    with pytest.raises(ParseError) as exc_info:
+        parse_frontmatter("---\nfoo: bar\n---\nbody")
+    assert "contains invalid characters" in str(exc_info.value)
+
+
+def test_parse_frontmatter_invalid_chars_value(monkeypatch):
+    """Test that parse_frontmatter raises ParseError for values with invalid characters."""
+
+    class MockParsed:
+        def __init__(self):
+            self.data = {"name": "bad\x00value"}
+
+    monkeypatch.setattr("strictyaml.load", lambda *args, **kwargs: MockParsed())
+
+    with pytest.raises(ParseError) as exc_info:
+        parse_frontmatter("---\nfoo: bar\n---\nbody")
+    assert "contains invalid characters" in str(exc_info.value)
+
+
+def test_parse_frontmatter_invalid_chars_metadata_key(monkeypatch):
+    """Test that parse_frontmatter raises ParseError for nested metadata keys with invalid characters."""
+
+    class MockParsed:
+        def __init__(self):
+            self.data = {
+                "name": "my-skill",
+                "description": "test",
+                "metadata": {"bad\x00key": "value"},
+            }
+
+    monkeypatch.setattr("strictyaml.load", lambda *args, **kwargs: MockParsed())
+
+    with pytest.raises(ParseError) as exc_info:
+        parse_frontmatter("---\nfoo: bar\n---\nbody")
+    assert "contains invalid characters" in str(exc_info.value)
+
+
+def test_parse_frontmatter_invalid_chars_metadata_value(monkeypatch):
+    """Test that parse_frontmatter raises ParseError for nested metadata values with invalid characters."""
+
+    class MockParsed:
+        def __init__(self):
+            self.data = {
+                "name": "my-skill",
+                "description": "test",
+                "metadata": {"key": "bad\x00value"},
+            }
+
+    monkeypatch.setattr("strictyaml.load", lambda *args, **kwargs: MockParsed())
+
+    with pytest.raises(ParseError) as exc_info:
+        parse_frontmatter("---\nfoo: bar\n---\nbody")
+    assert "contains invalid characters" in str(exc_info.value)
+
+
+def test_os_error_fallback_with_missing_strerror(tmp_path, monkeypatch):
+    """Test that OSError with a missing strerror attribute falls back to 'Unknown OS error' in parser and validator."""
+    skill_dir = tmp_path / "skill-dir"
+    skill_dir.mkdir()
+
+    # Create the SKILL.md file so find_skill_md can find it
+    skill_md = skill_dir / "SKILL.md"
+    skill_md.write_text("---\nname: skill-dir\ndescription: test\n---\n")
+
+    # Mock open to raise OSError with NO strerror
+    def mock_open(*args, **kwargs):
+        e = OSError()
+        e.strerror = None
+        raise e
+
+    monkeypatch.setattr("builtins.open", mock_open)
+
+    # Test read_properties (parser)
+    with pytest.raises(ParseError) as exc_info:
+        read_properties(skill_dir)
+    assert "Unknown OS error" in str(exc_info.value)
+
+    # Test validate (validator)
+    errors = validate(skill_dir)
+    assert len(errors) == 1
+    assert "Unknown OS error" in errors[0]
+
+
 def test_validate_metadata_unexpected_field_sanitized():
     """Test that validate_metadata sanitizes unexpected metadata fields with ANSI and control sequences."""
     metadata = {

@@ -5,7 +5,12 @@ from pathlib import Path
 
 from .constants import MAX_SKILLS_PER_PROMPT
 from .errors import SkillError
-from .parser import read_properties, _safe_name, _sanitize_error_text
+from .parser import (
+    read_properties,
+    _safe_name,
+    _sanitize_error_text,
+    _flatten_whitespace,
+)
 
 
 def to_prompt(skill_dirs: list[Path]) -> str:
@@ -57,23 +62,12 @@ def to_prompt(skill_dirs: list[Path]) -> str:
             props = read_properties(skill_dir)
             seen.add(skill_dir)
 
-            sanitized_name = (
-                _sanitize_error_text(props.name)
-                .replace("\n", " ")
-                .replace("\r", " ")
-                .replace("\t", " ")
-            )
-            sanitized_description = (
+            sanitized_name = _flatten_whitespace(_sanitize_error_text(props.name))
+            sanitized_description = _flatten_whitespace(
                 _sanitize_error_text(props.description)
-                .replace("\n", " ")
-                .replace("\r", " ")
-                .replace("\t", " ")
             )
-            sanitized_path = (
+            sanitized_path = _flatten_whitespace(
                 _sanitize_error_text(str(props.skill_md_path))
-                .replace("\n", " ")
-                .replace("\r", " ")
-                .replace("\t", " ")
             )
 
             lines.append("<skill>")

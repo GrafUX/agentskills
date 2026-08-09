@@ -23,6 +23,16 @@ from .models import SkillProperties
 ANSI_ESCAPE = re.compile(r"\x1b\[[0-9;?]*[a-zA-Z]")
 
 
+WHITESPACE_TRANSLATION = str.maketrans("\n\r\t", "   ")
+
+
+def _flatten_whitespace(text: str) -> str:
+    """Replace newlines, carriage returns, and tabs with spaces."""
+    if not isinstance(text, str):
+        return ""
+    return text.translate(WHITESPACE_TRANSLATION)
+
+
 def _sanitize_error_text(text: str) -> str:
     """Strip ANSI escape codes and other potentially dangerous control characters from error messages."""
     if not isinstance(text, str):
@@ -39,7 +49,7 @@ def _safe_name(name: str, max_len: int = 64) -> str:
         return ""
     sanitized = _sanitize_error_text(name).strip()
     # Replace newline, carriage return, and tab characters with spaces to prevent log/terminal injection
-    sanitized = sanitized.replace("\n", " ").replace("\r", " ").replace("\t", " ")
+    sanitized = _flatten_whitespace(sanitized)
     if len(sanitized) > max_len:
         return sanitized[:max_len] + "..."
     return sanitized

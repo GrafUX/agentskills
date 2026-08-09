@@ -416,3 +416,19 @@ Body
 """)
     errors = validate(skill_dir)
     assert any(f"exceeds {MAX_METADATA_KEYS_COUNT} keys limit" in e for e in errors)
+
+
+def test_validate_runtime_error(tmp_path):
+    """RuntimeError during file read should return a validation error."""
+    from unittest.mock import patch
+
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+
+    with patch(
+        "skills_ref.validator.find_skill_md", side_effect=RuntimeError("symlink loop")
+    ):
+        errors = validate(skill_dir)
+
+    assert len(errors) == 1
+    assert "Symlink loop or unresolvable path" in errors[0]

@@ -21,6 +21,7 @@ from .errors import ParseError, ValidationError
 from .models import SkillProperties
 
 ANSI_ESCAPE = re.compile(r"\x1b\[[0-9;?]*[a-zA-Z]")
+WHITESPACE_TRANSLATE = str.maketrans("\n\r\t", "   ")
 
 
 def _sanitize_error_text(text: str) -> str:
@@ -39,7 +40,7 @@ def _safe_name(name: str, max_len: int = 64) -> str:
         return ""
     sanitized = _sanitize_error_text(name).strip()
     # Replace newline, carriage return, and tab characters with spaces to prevent log/terminal injection
-    sanitized = sanitized.replace("\n", " ").replace("\r", " ").replace("\t", " ")
+    sanitized = sanitized.translate(WHITESPACE_TRANSLATE)
     if len(sanitized) > max_len:
         return sanitized[:max_len] + "..."
     return sanitized

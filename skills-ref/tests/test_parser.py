@@ -235,6 +235,22 @@ def test_read_properties_unicode_error(tmp_path):
         read_properties(skill_dir)
 
 
+def test_read_properties_runtime_error(tmp_path, monkeypatch):
+    """Symlink loop or unresolvable path should raise ParseError."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    skill_md = skill_dir / "SKILL.md"
+    skill_md.write_text("name: test\ndescription: test")
+
+    def mock_find_skill_md(*args, **kwargs):
+        raise RuntimeError("Mocked runtime error")
+
+    monkeypatch.setattr("skills_ref.parser.find_skill_md", mock_find_skill_md)
+
+    with pytest.raises(ParseError, match="Symlink loop or unresolvable path"):
+        read_properties(skill_dir)
+
+
 def test_invalid_yaml_characters():
     """YAML with unprintable/invalid characters (like ANSI escapes) should not crash."""
     content = "---\nname: 'test\033[31mred\033[0m'\ndescription: desc\n---\nbody"

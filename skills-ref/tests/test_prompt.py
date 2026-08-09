@@ -226,3 +226,39 @@ Body
         "<description>Description with color and control characters here</description>"
         in collapsed
     )
+
+
+def test_prompt_oserror_with_strerror(tmp_path, monkeypatch):
+    """Test that OSError with strerror is properly formatted in SkillError."""
+    skill_dir = tmp_path / "error-skill"
+    skill_dir.mkdir()
+
+    import skills_ref.prompt
+
+    def mock_read_properties(path):
+        raise OSError(2, "No such file or directory")
+
+    monkeypatch.setattr(skills_ref.prompt, "read_properties", mock_read_properties)
+
+    with pytest.raises(SkillError) as excinfo:
+        to_prompt([skill_dir])
+
+    assert "No such file or directory" in str(excinfo.value)
+
+
+def test_prompt_runtimeerror_without_strerror(tmp_path, monkeypatch):
+    """Test that RuntimeError without strerror falls back to default error message."""
+    skill_dir = tmp_path / "error-skill"
+    skill_dir.mkdir()
+
+    import skills_ref.prompt
+
+    def mock_read_properties(path):
+        raise RuntimeError("Something bad")
+
+    monkeypatch.setattr(skills_ref.prompt, "read_properties", mock_read_properties)
+
+    with pytest.raises(SkillError) as excinfo:
+        to_prompt([skill_dir])
+
+    assert "Symlink loop or unresolvable path" in str(excinfo.value)

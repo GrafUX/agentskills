@@ -156,24 +156,18 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
     return metadata, body
 
 
-def read_properties(skill_dir: Path) -> SkillProperties:
-    """Read skill properties from SKILL.md frontmatter.
-
-    This function parses the frontmatter and returns properties.
-    It does NOT perform full validation. Use validate() for that.
+def _read_skill_content(skill_dir: Path) -> tuple[str, Path]:
+    """Read the content of SKILL.md from the given directory.
 
     Args:
         skill_dir: Path to the skill directory
 
     Returns:
-        SkillProperties with parsed metadata
+        Tuple of (content, path to SKILL.md)
 
     Raises:
-        ParseError: If SKILL.md is missing or has invalid YAML
-        ValidationError: If required fields (name, description) are missing or exceed length limits
+        ParseError: If SKILL.md is missing or unreadable
     """
-    skill_dir = Path(skill_dir)
-
     try:
         skill_md = find_skill_md(skill_dir)
 
@@ -186,6 +180,7 @@ def read_properties(skill_dir: Path) -> SkillProperties:
                 raise ParseError(
                     f"SKILL.md in {_safe_name(skill_dir.name)} exceeds 1MB size limit"
                 )
+        return content, skill_md
     except OSError as e:
         raise ParseError(
             f"Failed to read SKILL.md in {_safe_name(skill_dir.name)}: {e.strerror}"
@@ -197,8 +192,20 @@ def read_properties(skill_dir: Path) -> SkillProperties:
             f"Failed to read SKILL.md in {_safe_name(skill_dir.name)}: Symlink loop or unresolvable path"
         )
 
-    metadata, _ = parse_frontmatter(content)
 
+def _extract_skill_properties(metadata: dict, skill_md: Path) -> SkillProperties:
+    """Extract and validate skill properties from parsed metadata.
+
+    Args:
+        metadata: Parsed frontmatter dictionary
+        skill_md: Path to the SKILL.md file
+
+    Returns:
+        SkillProperties object
+
+    Raises:
+        ValidationError: If properties fail length or type constraints
+    """
     if "name" not in metadata:
         raise ValidationError("Missing required field in frontmatter: name")
     if "description" not in metadata:
@@ -275,3 +282,25 @@ def read_properties(skill_dir: Path) -> SkillProperties:
         metadata=custom_metadata,
         skill_md_path=skill_md,
     )
+
+
+def read_properties(skill_dir: Path) -> SkillProperties:
+    """Read skill properties from SKILL.md frontmatter.
+
+    This function parses the frontmatter and returns properties.
+    It does NOT perform full validation. Use validate() for that.
+
+    Args:
+        skill_dir: Path to the skill directory
+
+    Returns:
+        SkillProperties with parsed metadata
+
+    Raises:
+        ParseError: If SKILL.md is missing or has invalid YAML
+        ValidationError: If required fields (name, description) are missing or exceed length limits
+    """
+    skill_dir = Path(skill_dir)
+    content, skill_md = _read_skill_content(skill_dir)
+    metadata, _ = parse_frontmatter(content)
+    return _extract_skill_properties(metadata, skill_md)

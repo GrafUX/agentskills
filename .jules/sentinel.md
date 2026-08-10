@@ -121,3 +121,8 @@
 **Vulnerability:** In `parser.py`, the core parser `parse_frontmatter` allowed arbitrary complex values (like nested lists and dictionaries) under expected fields (like `license` or `compatibility`) and unexpected fields. Because the length limit checks in `parse_frontmatter` only applied to string values (`isinstance(value, str)`), these nested objects successfully bypassed maximum length validations, introducing a Type Confusion and logic bypass risk during downstream consumption.
 **Learning:** Parsing libraries that return dynamic types (like `strictyaml` without a strict schema) require type-containment checks at the boundary level. If length or formatting checks assume a single scalar type (like `str`), nested structures can bypass those checks completely.
 **Prevention:** Unconditionally validate that parsed values match their expected scalar types at the earliest parsing phase, and explicitly reject any complex structures (like `dict` or `list`) on all non-complex keys (i.e. everything except the designated `'metadata'` dictionary).
+
+## 2024-08-10 - Fix CRLF Log Injection in YAML parser
+**Vulnerability:** YAML parsing errors from strictyaml were being truncated and logged without stripping CRLF characters, making the application vulnerable to Log Injection (CRLF injection) via manipulated frontmatter.
+**Learning:** Even when errors are truncated to prevent memory exhaustion, if un-sanitized newlines and carriage returns are preserved, malicious actors can spoof log entries or inject terminal control characters when the error is printed/logged.
+**Prevention:** Always sanitize exception messages (like stringified YAMLError) by replacing `\n`, `\r`, and `\t` with spaces before logging or re-raising them as custom errors.

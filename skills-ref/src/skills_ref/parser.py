@@ -23,6 +23,14 @@ from .models import SkillProperties
 ANSI_ESCAPE = re.compile(r"\x1b\[[0-9;?]*[a-zA-Z]")
 
 
+_WS_TRANS_TABLE = str.maketrans("\n\r\t", "   ")
+
+
+def _remove_newlines(text: str) -> str:
+    """Efficiently replace newlines, carriage returns, and tabs with spaces."""
+    return text.translate(_WS_TRANS_TABLE)
+
+
 def _sanitize_error_text(text: str) -> str:
     """Strip ANSI escape codes and other potentially dangerous control characters from error messages."""
     if not isinstance(text, str):
@@ -39,7 +47,7 @@ def _safe_name(name: str, max_len: int = 64) -> str:
         return ""
     sanitized = _sanitize_error_text(name).strip()
     # Replace newline, carriage return, and tab characters with spaces to prevent log/terminal injection
-    sanitized = sanitized.replace("\n", " ").replace("\r", " ").replace("\t", " ")
+    sanitized = _remove_newlines(sanitized)
     if len(sanitized) > max_len:
         return sanitized[:max_len] + "..."
     return sanitized
@@ -104,6 +112,7 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
         # on certain invalid inputs (e.g. AttributeError on unprintable characters)
         if isinstance(e, strictyaml.YAMLError):
             err_msg = _sanitize_error_text(str(e))
+            err_msg = _remove_newlines(err_msg)
             if len(err_msg) > 1000:
                 err_msg = err_msg[:1000] + "..."
             raise ParseError(f"Invalid YAML in frontmatter: {err_msg}")

@@ -406,3 +406,23 @@ Body
         match="Complex structures \\(dict/list\\) are not allowed in frontmatter field 'unexpected_field'",
     ):
         parse_frontmatter(content)
+
+
+def test_read_properties_oserror_without_strerror(tmp_path, monkeypatch):
+    """read_properties fallback when OSError lacks strerror."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("...")
+
+    # Monkeypatch builtins.open to raise an OSError with no strerror
+    def mock_open(*args, **kwargs):
+        err = OSError()
+        err.strerror = None
+        raise err
+
+    monkeypatch.setattr("builtins.open", mock_open)
+
+    with pytest.raises(ParseError) as exc_info:
+        read_properties(skill_dir)
+
+    assert "Unknown OS error" in str(exc_info.value)

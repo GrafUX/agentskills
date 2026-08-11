@@ -416,3 +416,32 @@ Body
 """)
     errors = validate(skill_dir)
     assert any(f"exceeds {MAX_METADATA_KEYS_COUNT} keys limit" in e for e in errors)
+
+
+def test_name_too_long_fail_fast(tmp_path, monkeypatch):
+    """Test that a skill name exceeding the limit fails fast before calling unicodedata.normalize."""
+    import unicodedata
+    from skills_ref.constants import MAX_SKILL_NAME_LENGTH
+
+    normalize_called = False
+    original_normalize = unicodedata.normalize
+
+    def mock_normalize(form, unistr):
+        nonlocal normalize_called
+        normalize_called = True
+        return original_normalize(form, unistr)
+
+    monkeypatch.setattr(unicodedata, "normalize", mock_normalize)
+
+    long_name = "a" * (MAX_SKILL_NAME_LENGTH + 1)
+    skill_dir = tmp_path / long_name
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text(f"""---
+name: {long_name}
+description: A test skill
+---
+Body
+""")
+    errors = validate(skill_dir)
+    assert any("exceeds" in e and "character limit" in e for e in errors)
+    assert not normalize_called

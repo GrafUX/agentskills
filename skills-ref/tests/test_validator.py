@@ -65,6 +65,35 @@ Body
     assert any("exceeds" in e and "character limit" in e for e in errors)
 
 
+def test_name_too_long_fail_fast_normalization(tmp_path, monkeypatch):
+    """Verify that name validation fails fast and does not call unicodedata.normalize for excessively long names."""
+    import unicodedata
+
+    normalize_called = False
+
+    original_normalize = unicodedata.normalize
+
+    def mock_normalize(form, unistr):
+        nonlocal normalize_called
+        normalize_called = True
+        return original_normalize(form, unistr)
+
+    monkeypatch.setattr(unicodedata, "normalize", mock_normalize)
+
+    long_name = "a" * (64 + 1)
+    skill_dir = tmp_path / long_name
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text(f"""---
+name: {long_name}
+description: A test skill
+---
+Body
+""")
+    errors = validate(skill_dir)
+    assert any("exceeds" in e and "character limit" in e for e in errors)
+    assert not normalize_called, "unicodedata.normalize should not have been called"
+
+
 def test_name_leading_hyphen(tmp_path):
     skill_dir = tmp_path / "-my-skill"
     skill_dir.mkdir()

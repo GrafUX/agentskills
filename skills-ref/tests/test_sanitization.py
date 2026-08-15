@@ -112,6 +112,30 @@ def test_parse_frontmatter_invalid_yaml_ansi():
     assert "[31m" not in error_str
 
 
+def test_parse_frontmatter_yaml_error_newlines_sanitized(monkeypatch):
+    """Test that ParseError in parse_frontmatter sanitizes YAMLError messages containing newlines."""
+    import strictyaml
+
+    class MockYAMLError(strictyaml.YAMLError):
+        def __str__(self):
+            return "Error\nwith\rnewlines\tand\ttabs"
+
+    def mock_load(*args, **kwargs):
+        raise MockYAMLError()
+
+    monkeypatch.setattr("strictyaml.load", mock_load)
+
+    with pytest.raises(ParseError) as exc_info:
+        parse_frontmatter("---\nfoo: bar\n---\nbody")
+
+    error_str = str(exc_info.value)
+    assert "Invalid YAML in frontmatter:" in error_str
+    assert "Error with newlines and tabs" in error_str
+    assert "\n" not in error_str
+    assert "\r" not in error_str
+    assert "\t" not in error_str
+
+
 def test_parse_frontmatter_key_too_long_ansi(monkeypatch):
     """Test that ParseError in parse_frontmatter sanitizes frontmatter key with ANSI sequence."""
     long_key_with_ansi = "\x1b[31mred\x1b[0m" + "x" * 110

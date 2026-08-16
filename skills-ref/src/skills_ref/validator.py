@@ -267,6 +267,9 @@ def validate(skill_dir: Path) -> list[str]:
         if skill_md is None:
             return ["Missing required file: SKILL.md"]
 
+        if skill_md.stat().st_size > 1024 * 1024:
+            return [f"SKILL.md in {_safe_name(skill_dir.name)} exceeds 1MB size limit"]
+
         with open(skill_md, "r", encoding="utf-8") as f:
             content = f.read(1024 * 1024 + 1)
             if len(content) > 1024 * 1024:

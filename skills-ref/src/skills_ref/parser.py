@@ -180,6 +180,11 @@ def read_properties(skill_dir: Path) -> SkillProperties:
         if skill_md is None:
             raise ParseError(f"SKILL.md not found in {_safe_name(skill_dir.name)}")
 
+        if skill_md.stat().st_size > 1024 * 1024:
+            raise ParseError(
+                f"SKILL.md in {_safe_name(skill_dir.name)} exceeds 1MB size limit"
+            )
+
         with open(skill_md, "r", encoding="utf-8") as f:
             content = f.read(1024 * 1024 + 1)
             if len(content) > 1024 * 1024:

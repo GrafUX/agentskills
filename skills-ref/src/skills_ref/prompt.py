@@ -1,6 +1,6 @@
 """Generate <available_skills> XML prompt block for agent system prompts."""
 
-import html
+from xml.sax.saxutils import escape as xml_escape
 from pathlib import Path
 
 from .constants import MAX_SKILLS_PER_PROMPT
@@ -78,14 +78,16 @@ def to_prompt(skill_dirs: list[Path]) -> str:
 
             lines.append("<skill>")
             lines.append("<name>")
-            lines.append(html.escape(sanitized_name))
+            lines.append(xml_escape(sanitized_name, {'"': "&quot;", "'": "&apos;"}))
             lines.append("</name>")
             lines.append("<description>")
-            lines.append(html.escape(sanitized_description))
+            lines.append(
+                xml_escape(sanitized_description, {'"': "&quot;", "'": "&apos;"})
+            )
             lines.append("</description>")
 
             lines.append("<location>")
-            lines.append(html.escape(sanitized_path))
+            lines.append(xml_escape(sanitized_path, {'"': "&quot;", "'": "&apos;"}))
             lines.append("</location>")
 
             lines.append("</skill>")

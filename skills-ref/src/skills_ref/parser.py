@@ -64,7 +64,7 @@ def find_skill_md(skill_dir: Path) -> Path | None:
             if path.is_file():
                 resolved_dir = skill_dir.resolve()
                 resolved_path = path.resolve()
-                if resolved_dir not in resolved_path.parents:
+                if not resolved_path.is_relative_to(resolved_dir):
                     return None
                 return path
     except OSError:

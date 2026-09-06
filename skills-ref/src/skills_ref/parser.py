@@ -1,5 +1,6 @@
 """YAML frontmatter parsing for SKILL.md files."""
 
+import logging
 import re
 from pathlib import Path
 
@@ -21,6 +22,8 @@ from .errors import ParseError, ValidationError
 from .models import SkillProperties
 
 ANSI_ESCAPE = re.compile(r"\x1b\[[0-9;?]*[a-zA-Z]")
+
+logger = logging.getLogger(__name__)
 
 
 def _sanitize_error_text(text: str) -> str:
@@ -68,9 +71,11 @@ def find_skill_md(skill_dir: Path) -> Path | None:
                     return None
                 return path
     except OSError:
-        pass
+        logger.debug("OSError while finding SKILL.md in %s", _safe_name(skill_dir.name))
     except RuntimeError:
-        pass
+        logger.debug(
+            "RuntimeError while finding SKILL.md in %s", _safe_name(skill_dir.name)
+        )
     return None
 
 

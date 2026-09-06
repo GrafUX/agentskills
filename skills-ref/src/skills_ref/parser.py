@@ -23,14 +23,34 @@ from .models import SkillProperties
 ANSI_ESCAPE = re.compile(r"\x1b\[[0-9;?]*[a-zA-Z]")
 
 
+class _UnprintableMapping(dict):
+    def __missing__(self, key: int) -> int | None:
+        c = chr(key)
+        if c.isprintable() or c in "\n\r\t":
+            self[key] = key
+            return key
+        self[key] = None
+        return None
+
+
+_UNPRINTABLE_MAPPING = _UnprintableMapping()
+_WHITESPACE_TRANS = str.maketrans("\n\r\t", "   ")
+
+
+def _remove_newlines(text: str) -> str:
+    """Replace newline, carriage return, and tab characters with spaces."""
+    if not isinstance(text, str):
+        return ""
+    return text.translate(_WHITESPACE_TRANS)
+
+
 def _sanitize_error_text(text: str) -> str:
     """Strip ANSI escape codes and other potentially dangerous control characters from error messages."""
     if not isinstance(text, str):
         return ""
     text = ANSI_ESCAPE.sub("", text)
     # Filter out dangerous non-printable control characters, keeping safe whitespace like \n, \r, \t
-    text = "".join(c for c in text if c in "\n\r\t" or c.isprintable())
-    return text
+    return text.translate(_UNPRINTABLE_MAPPING)
 
 
 def _safe_name(name: str, max_len: int = 64) -> str:
@@ -39,7 +59,7 @@ def _safe_name(name: str, max_len: int = 64) -> str:
         return ""
     sanitized = _sanitize_error_text(name).strip()
     # Replace newline, carriage return, and tab characters with spaces to prevent log/terminal injection
-    sanitized = sanitized.replace("\n", " ").replace("\r", " ").replace("\t", " ")
+    sanitized = _remove_newlines(sanitized)
     if len(sanitized) > max_len:
         return sanitized[:max_len] + "..."
     return sanitized

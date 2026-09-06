@@ -41,16 +41,16 @@ def to_prompt(skill_dirs: list[Path]) -> str:
 
     lines = ["<available_skills>"]
     seen = set()
-    resolved_cache = {}
+    seen_unresolved = set()
 
     for d in skill_dirs:
+        if d in seen_unresolved:
+            continue
+        seen_unresolved.add(d)
+
         path = Path(d)
         try:
-            skill_dir = resolved_cache.get(path)
-            if skill_dir is None:
-                skill_dir = path.resolve()
-                resolved_cache[path] = skill_dir
-
+            skill_dir = path.resolve()
             if skill_dir in seen:
                 continue
 

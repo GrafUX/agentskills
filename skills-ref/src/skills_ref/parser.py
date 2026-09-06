@@ -156,6 +156,77 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
     return metadata, body
 
 
+def _read_skill_file(skill_dir: Path) -> tuple[str, Path]:
+    try:
+        skill_md = find_skill_md(skill_dir)
+
+        if skill_md is None:
+            raise ParseError(f"SKILL.md not found in {_safe_name(skill_dir.name)}")
+
+        with open(skill_md, "r", encoding="utf-8") as f:
+            content = f.read(1024 * 1024 + 1)
+            if len(content) > 1024 * 1024:
+                raise ParseError(
+                    f"SKILL.md in {_safe_name(skill_dir.name)} exceeds 1MB size limit"
+                )
+        return content, skill_md
+    except OSError as e:
+        raise ParseError(
+            f"Failed to read SKILL.md in {_safe_name(skill_dir.name)}: {e.strerror}"
+        )
+    except UnicodeDecodeError:
+        raise ParseError(f"SKILL.md in {_safe_name(skill_dir.name)} is not valid UTF-8")
+    except RuntimeError:
+        raise ParseError(
+            f"Failed to read SKILL.md in {_safe_name(skill_dir.name)}: Symlink loop or unresolvable path"
+        )
+
+
+def _extract_string_field(
+    metadata: dict, field_name: str, max_length: int, required: bool = False
+) -> str | None:
+    if required and field_name not in metadata:
+        raise ValidationError(f"Missing required field in frontmatter: {field_name}")
+
+    val = metadata.get(field_name)
+    if val is None and not required:
+        return None
+
+    if not isinstance(val, str) or (required and not val.strip()):
+        raise ValidationError(
+            f"Field '{field_name}' must be a {'non-empty ' if required else ''}string"
+        )
+
+    if len(val) > max_length:
+        raise ValidationError(
+            f"Field '{field_name}' exceeds {max_length} character limit"
+        )
+
+    return val.strip() if required else val
+
+
+def _validate_custom_metadata(custom_metadata: dict | None) -> None:
+    if custom_metadata is None:
+        return
+
+    if not isinstance(custom_metadata, dict):
+        raise ValidationError("Field 'metadata' must be a dictionary")
+    if len(custom_metadata) > MAX_METADATA_KEYS_COUNT:
+        raise ValidationError(
+            f"Field 'metadata' exceeds {MAX_METADATA_KEYS_COUNT} keys limit"
+        )
+
+    for k, v in custom_metadata.items():
+        if not isinstance(k, str) or len(k) > MAX_METADATA_KEY_LENGTH:
+            raise ValidationError(
+                f"Metadata key exceeds {MAX_METADATA_KEY_LENGTH} character limit"
+            )
+        if not isinstance(v, str) or len(v) > MAX_METADATA_VALUE_LENGTH:
+            raise ValidationError(
+                f"Metadata value exceeds {MAX_METADATA_VALUE_LENGTH} character limit"
+            )
+
+
 def read_properties(skill_dir: Path) -> SkillProperties:
     """Read skill properties from SKILL.md frontmatter.
 
@@ -174,101 +245,27 @@ def read_properties(skill_dir: Path) -> SkillProperties:
     """
     skill_dir = Path(skill_dir)
 
-    try:
-        skill_md = find_skill_md(skill_dir)
-
-        if skill_md is None:
-            raise ParseError(f"SKILL.md not found in {_safe_name(skill_dir.name)}")
-
-        with open(skill_md, "r", encoding="utf-8") as f:
-            content = f.read(1024 * 1024 + 1)
-            if len(content) > 1024 * 1024:
-                raise ParseError(
-                    f"SKILL.md in {_safe_name(skill_dir.name)} exceeds 1MB size limit"
-                )
-    except OSError as e:
-        raise ParseError(
-            f"Failed to read SKILL.md in {_safe_name(skill_dir.name)}: {e.strerror}"
-        )
-    except UnicodeDecodeError:
-        raise ParseError(f"SKILL.md in {_safe_name(skill_dir.name)} is not valid UTF-8")
-    except RuntimeError:
-        raise ParseError(
-            f"Failed to read SKILL.md in {_safe_name(skill_dir.name)}: Symlink loop or unresolvable path"
-        )
-
+    content, skill_md = _read_skill_file(skill_dir)
     metadata, _ = parse_frontmatter(content)
 
-    if "name" not in metadata:
-        raise ValidationError("Missing required field in frontmatter: name")
-    if "description" not in metadata:
-        raise ValidationError("Missing required field in frontmatter: description")
-
-    name = metadata["name"]
-    description = metadata["description"]
-
-    if not isinstance(name, str) or not name.strip():
-        raise ValidationError("Field 'name' must be a non-empty string")
-    if len(name) > MAX_SKILL_NAME_LENGTH:
-        raise ValidationError(
-            f"Field 'name' exceeds {MAX_SKILL_NAME_LENGTH} character limit"
-        )
-
-    if not isinstance(description, str) or not description.strip():
-        raise ValidationError("Field 'description' must be a non-empty string")
-    if len(description) > MAX_DESCRIPTION_LENGTH:
-        raise ValidationError(
-            f"Field 'description' exceeds {MAX_DESCRIPTION_LENGTH} character limit"
-        )
-
-    license_val = metadata.get("license")
-    if license_val is not None:
-        if not isinstance(license_val, str):
-            raise ValidationError("Field 'license' must be a string")
-        if len(license_val) > MAX_LICENSE_LENGTH:
-            raise ValidationError(
-                f"Field 'license' exceeds {MAX_LICENSE_LENGTH} character limit"
-            )
-
-    comp_val = metadata.get("compatibility")
-    if comp_val is not None:
-        if not isinstance(comp_val, str):
-            raise ValidationError("Field 'compatibility' must be a string")
-        if len(comp_val) > MAX_COMPATIBILITY_LENGTH:
-            raise ValidationError(
-                f"Field 'compatibility' exceeds {MAX_COMPATIBILITY_LENGTH} character limit"
-            )
-
-    tools_val = metadata.get("allowed-tools")
-    if tools_val is not None:
-        if not isinstance(tools_val, str):
-            raise ValidationError("Field 'allowed-tools' must be a string")
-        if len(tools_val) > MAX_ALLOWED_TOOLS_LENGTH:
-            raise ValidationError(
-                f"Field 'allowed-tools' exceeds {MAX_ALLOWED_TOOLS_LENGTH} character limit"
-            )
+    name = _extract_string_field(metadata, "name", MAX_SKILL_NAME_LENGTH, required=True)
+    description = _extract_string_field(
+        metadata, "description", MAX_DESCRIPTION_LENGTH, required=True
+    )
+    license_val = _extract_string_field(metadata, "license", MAX_LICENSE_LENGTH)
+    comp_val = _extract_string_field(
+        metadata, "compatibility", MAX_COMPATIBILITY_LENGTH
+    )
+    tools_val = _extract_string_field(
+        metadata, "allowed-tools", MAX_ALLOWED_TOOLS_LENGTH
+    )
 
     custom_metadata = metadata.get("metadata")
-    if custom_metadata is not None:
-        if not isinstance(custom_metadata, dict):
-            raise ValidationError("Field 'metadata' must be a dictionary")
-        if len(custom_metadata) > MAX_METADATA_KEYS_COUNT:
-            raise ValidationError(
-                f"Field 'metadata' exceeds {MAX_METADATA_KEYS_COUNT} keys limit"
-            )
-        for k, v in custom_metadata.items():
-            if not isinstance(k, str) or len(k) > MAX_METADATA_KEY_LENGTH:
-                raise ValidationError(
-                    f"Metadata key exceeds {MAX_METADATA_KEY_LENGTH} character limit"
-                )
-            if not isinstance(v, str) or len(v) > MAX_METADATA_VALUE_LENGTH:
-                raise ValidationError(
-                    f"Metadata value exceeds {MAX_METADATA_VALUE_LENGTH} character limit"
-                )
+    _validate_custom_metadata(custom_metadata)
 
     return SkillProperties(
-        name=name.strip(),
-        description=description.strip(),
+        name=name,
+        description=description,
         license=license_val,
         compatibility=comp_val,
         allowed_tools=tools_val,

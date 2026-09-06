@@ -1,5 +1,6 @@
 """YAML frontmatter parsing for SKILL.md files."""
 
+import logging
 import re
 from pathlib import Path
 
@@ -21,6 +22,8 @@ from .errors import ParseError, ValidationError
 from .models import SkillProperties
 
 ANSI_ESCAPE = re.compile(r"\x1b\[[0-9;?]*[a-zA-Z]")
+
+logger = logging.getLogger(__name__)
 
 
 def _sanitize_error_text(text: str) -> str:
@@ -67,10 +70,17 @@ def find_skill_md(skill_dir: Path) -> Path | None:
                 if resolved_dir not in resolved_path.parents:
                     return None
                 return path
-    except OSError:
-        pass
+    except OSError as e:
+        logger.debug(
+            "Failed to access SKILL.md in %s: %s",
+            _safe_name(skill_dir.name),
+            e.strerror,
+        )
     except RuntimeError:
-        pass
+        logger.debug(
+            "Failed to resolve SKILL.md in %s: Symlink loop or unresolvable path",
+            _safe_name(skill_dir.name),
+        )
     return None
 
 

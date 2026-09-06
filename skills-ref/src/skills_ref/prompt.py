@@ -7,6 +7,8 @@ from .constants import MAX_SKILLS_PER_PROMPT
 from .errors import SkillError
 from .parser import read_properties, _safe_name, _sanitize_error_text
 
+_WHITESPACE_TRANSLATE_TABLE = str.maketrans("\n\r\t", "   ")
+
 
 def to_prompt(skill_dirs: list[Path]) -> str:
     """Generate the <available_skills> XML block for inclusion in agent prompts.
@@ -57,23 +59,14 @@ def to_prompt(skill_dirs: list[Path]) -> str:
             props = read_properties(skill_dir)
             seen.add(skill_dir)
 
-            sanitized_name = (
-                _sanitize_error_text(props.name)
-                .replace("\n", " ")
-                .replace("\r", " ")
-                .replace("\t", " ")
+            sanitized_name = _sanitize_error_text(props.name).translate(
+                _WHITESPACE_TRANSLATE_TABLE
             )
-            sanitized_description = (
-                _sanitize_error_text(props.description)
-                .replace("\n", " ")
-                .replace("\r", " ")
-                .replace("\t", " ")
+            sanitized_description = _sanitize_error_text(props.description).translate(
+                _WHITESPACE_TRANSLATE_TABLE
             )
-            sanitized_path = (
-                _sanitize_error_text(str(props.skill_md_path))
-                .replace("\n", " ")
-                .replace("\r", " ")
-                .replace("\t", " ")
+            sanitized_path = _sanitize_error_text(str(props.skill_md_path)).translate(
+                _WHITESPACE_TRANSLATE_TABLE
             )
 
             lines.append("<skill>")

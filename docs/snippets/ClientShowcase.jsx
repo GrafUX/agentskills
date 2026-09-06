@@ -25,9 +25,9 @@ export const ClientShowcase = ({clients}) => {
 
   const sanitizeUrl = (url) => {
     if (!url) return undefined;
-    const trimmed = url.trim();
-    if (/^(https?:\/\/|\/(?!\/))/i.test(trimmed)) {
-      return trimmed;
+    const cleanUrl = url.replace(/[\u0000-\u001F\u007F-\u009F\s]+/g, '').trim();
+    if (/^(https?:\/\/|\/(?!\/))/i.test(cleanUrl)) {
+      return cleanUrl;
     }
     return undefined;
   };

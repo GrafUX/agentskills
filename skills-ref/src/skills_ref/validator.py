@@ -27,32 +27,9 @@ ALLOWED_FIELDS = {
 }
 
 
-def _validate_name(name: str, skill_dir: Path) -> list[str]:
-    """Validate skill name format and directory match.
-
-    Skill names support i18n characters (Unicode letters) plus hyphens.
-    Names must be lowercase and cannot start/end with hyphens.
-    """
+def _check_name_format(name: str, display_name: str) -> list[str]:
+    """Check the format of a skill name."""
     errors = []
-
-    if not name or not isinstance(name, str) or not name.strip():
-        errors.append("Field 'name' must be a non-empty string")
-        return errors
-
-    name = unicodedata.normalize("NFKC", name.strip())
-
-    display_name = (
-        _safe_name(name, max_len=100)
-        .replace("\n", " ")
-        .replace("\r", " ")
-        .replace("\t", " ")
-    )
-    if len(name) > MAX_SKILL_NAME_LENGTH:
-        errors.append(
-            f"Skill name '{display_name}' exceeds {MAX_SKILL_NAME_LENGTH} character limit "
-            f"({len(name)} chars)"
-        )
-
     if name != name.lower():
         errors.append(f"Skill name '{display_name}' must be lowercase")
 
@@ -67,6 +44,31 @@ def _validate_name(name: str, skill_dir: Path) -> list[str]:
             f"Skill name '{display_name}' contains invalid characters. "
             "Only letters, digits, and hyphens are allowed."
         )
+    return errors
+
+
+def _validate_name(name: str, skill_dir: Path) -> list[str]:
+    """Validate skill name format and directory match.
+
+    Skill names support i18n characters (Unicode letters) plus hyphens.
+    Names must be lowercase and cannot start/end with hyphens.
+    """
+    errors = []
+
+    if not name or not isinstance(name, str) or not name.strip():
+        errors.append("Field 'name' must be a non-empty string")
+        return errors
+
+    name = unicodedata.normalize("NFKC", name.strip())
+
+    display_name = _safe_name(name, max_len=100)
+    if len(name) > MAX_SKILL_NAME_LENGTH:
+        errors.append(
+            f"Skill name '{display_name}' exceeds {MAX_SKILL_NAME_LENGTH} character limit "
+            f"({len(name)} chars)"
+        )
+
+    errors.extend(_check_name_format(name, display_name))
 
     if skill_dir:
         dir_name = unicodedata.normalize("NFKC", skill_dir.name)
@@ -159,12 +161,7 @@ def _validate_metadata_dict(custom_metadata: dict) -> list[str]:
             errors.append("Metadata keys must be strings")
             continue
 
-        display_k = (
-            _safe_name(k, max_len=100)
-            .replace("\n", " ")
-            .replace("\r", " ")
-            .replace("\t", " ")
-        )
+        display_k = _safe_name(k, max_len=100)
         if len(k) > MAX_METADATA_KEY_LENGTH:
             errors.append(
                 f"Metadata key '{display_k}' exceeds {MAX_METADATA_KEY_LENGTH} character limit"

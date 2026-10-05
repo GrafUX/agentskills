@@ -1,11 +1,17 @@
 """Generate <available_skills> XML prompt block for agent system prompts."""
 
 import html
+import functools
 from pathlib import Path
 
 from .constants import MAX_SKILLS_PER_PROMPT
 from .errors import SkillError
 from .parser import read_properties, _safe_name, _sanitize_error_text
+
+
+@functools.lru_cache(maxsize=1024)
+def _resolve_path(path: Path) -> Path:
+    return path.resolve()
 
 
 def to_prompt(skill_dirs: list[Path]) -> str:
@@ -41,15 +47,11 @@ def to_prompt(skill_dirs: list[Path]) -> str:
 
     lines = ["<available_skills>"]
     seen = set()
-    resolved_cache = {}
 
     for d in skill_dirs:
         path = Path(d)
         try:
-            skill_dir = resolved_cache.get(path)
-            if skill_dir is None:
-                skill_dir = path.resolve()
-                resolved_cache[path] = skill_dir
+            skill_dir = _resolve_path(path)
 
             if skill_dir in seen:
                 continue

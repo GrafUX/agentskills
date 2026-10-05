@@ -76,19 +76,13 @@ def to_prompt(skill_dirs: list[Path]) -> str:
                 .replace("\t", " ")
             )
 
-            lines.append("<skill>")
-            lines.append("<name>")
-            lines.append(html.escape(sanitized_name))
-            lines.append("</name>")
-            lines.append("<description>")
-            lines.append(html.escape(sanitized_description))
-            lines.append("</description>")
-
-            lines.append("<location>")
-            lines.append(html.escape(sanitized_path))
-            lines.append("</location>")
-
-            lines.append("</skill>")
+            lines.append(
+                f"<skill>\n"
+                f"<name>\n{html.escape(sanitized_name)}\n</name>\n"
+                f"<description>\n{html.escape(sanitized_description)}\n</description>\n"
+                f"<location>\n{html.escape(sanitized_path)}\n</location>\n"
+                f"</skill>"
+            )
         except (OSError, RuntimeError) as e:
             error_msg = getattr(e, "strerror", None)
             if not error_msg:

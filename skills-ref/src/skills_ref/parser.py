@@ -99,8 +99,8 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
     try:
         parsed = strictyaml.load(frontmatter_str)
         metadata = parsed.data
-    except Exception as e:  # noqa: BLE001
-        # Catch all exceptions because strictyaml can raise non-YAMLError exceptions
+    except (strictyaml.YAMLError, AttributeError, TypeError, ValueError) as e:
+        # Catch specific exceptions because strictyaml can raise non-YAMLError exceptions
         # on certain invalid inputs (e.g. AttributeError on unprintable characters)
         if isinstance(e, strictyaml.YAMLError):
             err_msg = _sanitize_error_text(str(e))

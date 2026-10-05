@@ -314,6 +314,20 @@ def test_validate_unicode_error(tmp_path):
     assert "is not valid UTF-8" in errors[0]
 
 
+def test_validate_runtime_error(tmp_path):
+    """RuntimeError (like symlink loop) should return a validation error."""
+    from unittest.mock import patch
+
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+
+    with patch("skills_ref.validator.find_skill_md", side_effect=RuntimeError("symlink loop")):
+        errors = validate(skill_dir)
+
+    assert len(errors) == 1
+    assert "Symlink loop or unresolvable path" in errors[0]
+
+
 def test_license_too_long(tmp_path):
     """License exceeding 100 chars should fail."""
     skill_dir = tmp_path / "my-skill"

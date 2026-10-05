@@ -39,7 +39,8 @@ def _safe_name(name: str, max_len: int = 64) -> str:
         return ""
     sanitized = _sanitize_error_text(name).strip()
     # Replace newline, carriage return, and tab characters with spaces to prevent log/terminal injection
-    sanitized = sanitized.replace("\n", " ").replace("\r", " ").replace("\t", " ")
+    if "\n" in sanitized or "\r" in sanitized or "\t" in sanitized:
+        sanitized = sanitized.replace("\n", " ").replace("\r", " ").replace("\t", " ")
     if len(sanitized) > max_len:
         return sanitized[:max_len] + "..."
     return sanitized

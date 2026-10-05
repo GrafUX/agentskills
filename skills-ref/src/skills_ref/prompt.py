@@ -57,24 +57,17 @@ def to_prompt(skill_dirs: list[Path]) -> str:
             props = read_properties(skill_dir)
             seen.add(skill_dir)
 
-            sanitized_name = (
-                _sanitize_error_text(props.name)
-                .replace("\n", " ")
-                .replace("\r", " ")
-                .replace("\t", " ")
-            )
-            sanitized_description = (
-                _sanitize_error_text(props.description)
-                .replace("\n", " ")
-                .replace("\r", " ")
-                .replace("\t", " ")
-            )
-            sanitized_path = (
-                _sanitize_error_text(str(props.skill_md_path))
-                .replace("\n", " ")
-                .replace("\r", " ")
-                .replace("\t", " ")
-            )
+            sanitized_name = _sanitize_error_text(props.name)
+            if "\n" in sanitized_name or "\r" in sanitized_name or "\t" in sanitized_name:
+                sanitized_name = sanitized_name.replace("\n", " ").replace("\r", " ").replace("\t", " ")
+
+            sanitized_description = _sanitize_error_text(props.description)
+            if "\n" in sanitized_description or "\r" in sanitized_description or "\t" in sanitized_description:
+                sanitized_description = sanitized_description.replace("\n", " ").replace("\r", " ").replace("\t", " ")
+
+            sanitized_path = _sanitize_error_text(str(props.skill_md_path))
+            if "\n" in sanitized_path or "\r" in sanitized_path or "\t" in sanitized_path:
+                sanitized_path = sanitized_path.replace("\n", " ").replace("\r", " ").replace("\t", " ")
 
             lines.append("<skill>")
             lines.append("<name>")

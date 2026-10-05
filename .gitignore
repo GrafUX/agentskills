@@ -7,3 +7,6 @@
 
 # Dependencies
 node_modules/
+.test_skills/
+.test_skills/
+.test_skills_large/

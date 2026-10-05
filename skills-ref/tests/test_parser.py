@@ -235,6 +235,22 @@ def test_read_properties_unicode_error(tmp_path):
         read_properties(skill_dir)
 
 
+def test_read_properties_runtime_error(tmp_path, monkeypatch):
+    """RuntimeError when reading file should raise ParseError."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    skill_md = skill_dir / "SKILL.md"
+    skill_md.write_text("dummy content")
+
+    def mock_open(*args, **kwargs):
+        raise RuntimeError("Mock symlink loop")
+
+    monkeypatch.setattr("builtins.open", mock_open)
+
+    with pytest.raises(ParseError, match="Symlink loop or unresolvable path"):
+        read_properties(skill_dir)
+
+
 def test_invalid_yaml_characters():
     """YAML with unprintable/invalid characters (like ANSI escapes) should not crash."""
     content = "---\nname: 'test\033[31mred\033[0m'\ndescription: desc\n---\nbody"

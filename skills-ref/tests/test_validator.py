@@ -1,6 +1,43 @@
 """Tests for validator module."""
 
-from skills_ref.validator import validate
+from skills_ref.validator import validate, _validate_description
+from skills_ref.constants import MAX_DESCRIPTION_LENGTH
+
+
+def test_validate_description_valid():
+    """Test with a valid normal description."""
+    errors = _validate_description("A normal description")
+    assert errors == []
+
+
+def test_validate_description_empty():
+    """Test with empty string."""
+    errors = _validate_description("")
+    assert len(errors) == 1
+    assert "empty" in errors[0].lower()
+
+
+def test_validate_description_whitespace():
+    """Test with only whitespace."""
+    errors = _validate_description("   ")
+    assert len(errors) == 1
+    assert "empty" in errors[0].lower()
+
+
+def test_validate_description_none():
+    """Test with None."""
+    errors = _validate_description(None)
+    assert len(errors) == 1
+    assert "empty" in errors[0].lower()
+
+
+def test_validate_description_too_long():
+    """Test with a string exceeding MAX_DESCRIPTION_LENGTH."""
+    long_desc = "x" * (MAX_DESCRIPTION_LENGTH + 1)
+    errors = _validate_description(long_desc)
+    assert len(errors) == 1
+    assert "exceed" in errors[0].lower()
+    assert str(MAX_DESCRIPTION_LENGTH) in errors[0]
 
 
 def test_valid_skill(tmp_path):

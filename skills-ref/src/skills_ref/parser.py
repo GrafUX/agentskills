@@ -21,6 +21,8 @@ from .errors import ParseError, ValidationError
 from .models import SkillProperties
 
 ANSI_ESCAPE = re.compile(r"\x1b\[[0-9;?]*[a-zA-Z]")
+# Matches ASCII control characters except \t (0x09), \n (0x0a), and \r (0x0d)
+ASCII_CONTROL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]")
 
 
 def _sanitize_error_text(text: str) -> str:
@@ -28,7 +30,24 @@ def _sanitize_error_text(text: str) -> str:
     if not isinstance(text, str):
         return ""
     text = ANSI_ESCAPE.sub("", text)
-    # Filter out dangerous non-printable control characters, keeping safe whitespace like \n, \r, \t
+
+    # Fast path: if all characters are printable, return early
+    if text.isprintable():
+        return text
+
+    # Fast path: if the only unprintable characters are \n, \r, or \t
+    if text.replace("\n", "").replace("\r", "").replace("\t", "").isprintable():
+        return text
+
+    # Try removing common ASCII control characters first for a faster slow-path
+    text = ASCII_CONTROL.sub("", text)
+    if (
+        text.isprintable()
+        or text.replace("\n", "").replace("\r", "").replace("\t", "").isprintable()
+    ):
+        return text
+
+    # Slowest path: Filter out any remaining non-printable control characters (e.g. Unicode format characters)
     text = "".join(c for c in text if c in "\n\r\t" or c.isprintable())
     return text
 

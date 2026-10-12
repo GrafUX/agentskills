@@ -1,6 +1,7 @@
 """Tests for validator module."""
 
-from skills_ref.validator import validate
+from skills_ref.validator import _validate_compatibility, validate
+from skills_ref.constants import MAX_COMPATIBILITY_LENGTH
 
 
 def test_valid_skill(tmp_path):
@@ -416,3 +417,17 @@ Body
 """)
     errors = validate(skill_dir)
     assert any(f"exceeds {MAX_METADATA_KEYS_COUNT} keys limit" in e for e in errors)
+
+
+def test__validate_compatibility_valid():
+    """Direct test for valid compatibility."""
+    errors = _validate_compatibility("Requires Python 3.11+")
+    assert errors == []
+
+
+def test__validate_compatibility_too_long():
+    """Direct test for compatibility exceeding length limit."""
+    long_compat = "x" * (MAX_COMPATIBILITY_LENGTH + 1)
+    errors = _validate_compatibility(long_compat)
+    assert len(errors) == 1
+    assert "exceeds maximum" in errors[0] or "exceeds 500 character limit" in errors[0]

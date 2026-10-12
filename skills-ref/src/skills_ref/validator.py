@@ -78,72 +78,72 @@ def _validate_name(name: str, skill_dir: Path) -> list[str]:
     return errors
 
 
-def _validate_description(description: str) -> list[str]:
-    """Validate description format."""
+def _validate_string_field(
+    value: str,
+    field_name: str,
+    max_length: int,
+    length_msg_prefix: str,
+    require_non_empty: bool = False,
+) -> list[str]:
+    """Generic validation for string fields."""
     errors = []
 
-    if not description or not isinstance(description, str) or not description.strip():
-        errors.append("Field 'description' must be a non-empty string")
-        return errors
+    if require_non_empty:
+        if not value or not isinstance(value, str) or not value.strip():
+            errors.append(f"Field '{field_name}' must be a non-empty string")
+            return errors
+    else:
+        if not isinstance(value, str):
+            errors.append(f"Field '{field_name}' must be a string")
+            return errors
 
-    if len(description) > MAX_DESCRIPTION_LENGTH:
+    if len(value) > max_length:
         errors.append(
-            f"Description exceeds {MAX_DESCRIPTION_LENGTH} character limit "
-            f"({len(description)} chars)"
+            f"{length_msg_prefix} {max_length} character limit ({len(value)} chars)"
         )
 
     return errors
+
+
+def _validate_description(description: str) -> list[str]:
+    """Validate description format."""
+    return _validate_string_field(
+        description,
+        field_name="description",
+        max_length=MAX_DESCRIPTION_LENGTH,
+        length_msg_prefix="Description exceeds",
+        require_non_empty=True,
+    )
 
 
 def _validate_compatibility(compatibility: str) -> list[str]:
     """Validate compatibility format."""
-    errors = []
-
-    if not isinstance(compatibility, str):
-        errors.append("Field 'compatibility' must be a string")
-        return errors
-
-    if len(compatibility) > MAX_COMPATIBILITY_LENGTH:
-        errors.append(
-            f"Compatibility exceeds {MAX_COMPATIBILITY_LENGTH} character limit "
-            f"({len(compatibility)} chars)"
-        )
-
-    return errors
+    return _validate_string_field(
+        compatibility,
+        field_name="compatibility",
+        max_length=MAX_COMPATIBILITY_LENGTH,
+        length_msg_prefix="Compatibility exceeds",
+    )
 
 
 def _validate_license(license_str: str) -> list[str]:
     """Validate license format."""
-    errors = []
-
-    if not isinstance(license_str, str):
-        errors.append("Field 'license' must be a string")
-        return errors
-
-    if len(license_str) > MAX_LICENSE_LENGTH:
-        errors.append(
-            f"License exceeds {MAX_LICENSE_LENGTH} character limit "
-            f"({len(license_str)} chars)"
-        )
-
-    return errors
+    return _validate_string_field(
+        license_str,
+        field_name="license",
+        max_length=MAX_LICENSE_LENGTH,
+        length_msg_prefix="License exceeds",
+    )
 
 
 def _validate_allowed_tools(allowed_tools: str) -> list[str]:
     """Validate allowed-tools format."""
-    errors = []
-
-    if not isinstance(allowed_tools, str):
-        errors.append("Field 'allowed-tools' must be a string")
-        return errors
-
-    if len(allowed_tools) > MAX_ALLOWED_TOOLS_LENGTH:
-        errors.append(
-            f"Allowed tools exceed {MAX_ALLOWED_TOOLS_LENGTH} character limit "
-            f"({len(allowed_tools)} chars)"
-        )
-
-    return errors
+    return _validate_string_field(
+        allowed_tools,
+        field_name="allowed-tools",
+        max_length=MAX_ALLOWED_TOOLS_LENGTH,
+        length_msg_prefix="Allowed tools exceed",
+    )
 
 
 def _validate_metadata_dict(custom_metadata: dict) -> list[str]:

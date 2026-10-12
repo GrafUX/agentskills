@@ -33,13 +33,16 @@ def _sanitize_error_text(text: str) -> str:
     return text
 
 
+_WS_TRANSLATE_TABLE = str.maketrans("\n\r\t", "   ")
+
+
 def _safe_name(name: str, max_len: int = 64) -> str:
     """Sanitize and truncate untrusted strings (like directory names or inputs) reflected in error messages."""
     if not name:
         return ""
     sanitized = _sanitize_error_text(name).strip()
     # Replace newline, carriage return, and tab characters with spaces to prevent log/terminal injection
-    sanitized = sanitized.replace("\n", " ").replace("\r", " ").replace("\t", " ")
+    sanitized = sanitized.translate(_WS_TRANSLATE_TABLE)
     if len(sanitized) > max_len:
         return sanitized[:max_len] + "..."
     return sanitized

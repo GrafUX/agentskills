@@ -3,9 +3,9 @@
 import html
 from pathlib import Path
 
-from .constants import MAX_SKILLS_PER_PROMPT
+from .constants import MAX_DESCRIPTION_LENGTH, MAX_SKILLS_PER_PROMPT
 from .errors import SkillError
-from .parser import read_properties, _safe_name, _sanitize_error_text
+from .parser import _safe_name, read_properties
 
 
 def to_prompt(skill_dirs: list[Path]) -> str:
@@ -57,24 +57,12 @@ def to_prompt(skill_dirs: list[Path]) -> str:
             props = read_properties(skill_dir)
             seen.add(skill_dir)
 
-            sanitized_name = (
-                _sanitize_error_text(props.name)
-                .replace("\n", " ")
-                .replace("\r", " ")
-                .replace("\t", " ")
+            sanitized_name = _safe_name(props.name)
+            sanitized_description = _safe_name(
+                props.description, max_len=MAX_DESCRIPTION_LENGTH
             )
-            sanitized_description = (
-                _sanitize_error_text(props.description)
-                .replace("\n", " ")
-                .replace("\r", " ")
-                .replace("\t", " ")
-            )
-            sanitized_path = (
-                _sanitize_error_text(str(props.skill_md_path))
-                .replace("\n", " ")
-                .replace("\r", " ")
-                .replace("\t", " ")
-            )
+            path_str = str(props.skill_md_path)
+            sanitized_path = _safe_name(path_str, max_len=len(path_str))
 
             lines.append("<skill>")
             lines.append("<name>")

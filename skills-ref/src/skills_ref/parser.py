@@ -156,6 +156,18 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
     return metadata, body
 
 
+def _validate_optional_string_field(
+    value: str | None, field_name: str, max_length: int
+) -> None:
+    if value is not None:
+        if not isinstance(value, str):
+            raise ValidationError(f"Field '{field_name}' must be a string")
+        if len(value) > max_length:
+            raise ValidationError(
+                f"Field '{field_name}' exceeds {max_length} character limit"
+            )
+
+
 def read_properties(skill_dir: Path) -> SkillProperties:
     """Read skill properties from SKILL.md frontmatter.
 
@@ -222,31 +234,15 @@ def read_properties(skill_dir: Path) -> SkillProperties:
         )
 
     license_val = metadata.get("license")
-    if license_val is not None:
-        if not isinstance(license_val, str):
-            raise ValidationError("Field 'license' must be a string")
-        if len(license_val) > MAX_LICENSE_LENGTH:
-            raise ValidationError(
-                f"Field 'license' exceeds {MAX_LICENSE_LENGTH} character limit"
-            )
+    _validate_optional_string_field(license_val, "license", MAX_LICENSE_LENGTH)
 
     comp_val = metadata.get("compatibility")
-    if comp_val is not None:
-        if not isinstance(comp_val, str):
-            raise ValidationError("Field 'compatibility' must be a string")
-        if len(comp_val) > MAX_COMPATIBILITY_LENGTH:
-            raise ValidationError(
-                f"Field 'compatibility' exceeds {MAX_COMPATIBILITY_LENGTH} character limit"
-            )
+    _validate_optional_string_field(comp_val, "compatibility", MAX_COMPATIBILITY_LENGTH)
 
     tools_val = metadata.get("allowed-tools")
-    if tools_val is not None:
-        if not isinstance(tools_val, str):
-            raise ValidationError("Field 'allowed-tools' must be a string")
-        if len(tools_val) > MAX_ALLOWED_TOOLS_LENGTH:
-            raise ValidationError(
-                f"Field 'allowed-tools' exceeds {MAX_ALLOWED_TOOLS_LENGTH} character limit"
-            )
+    _validate_optional_string_field(
+        tools_val, "allowed-tools", MAX_ALLOWED_TOOLS_LENGTH
+    )
 
     custom_metadata = metadata.get("metadata")
     if custom_metadata is not None:
